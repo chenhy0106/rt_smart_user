@@ -1,0 +1,17 @@
+from building import *
+
+cwd     = GetCurrentDir()
+src     = Glob('src/*.c') + Glob('src/*.cpp')
+CPPPATH = [
+        cwd,
+        cwd + '/components/dfs',
+        cwd + '/components/drivers',
+        cwd + '/components/net',
+        cwd + '/components/net/netdev',
+        cwd + '/include'
+]
+CPPDEFINES = ['HAVE_CCONFIG_H', '__STDC_ISO_10646__=201206L', '_STDC_PREDEF_H']
+
+group = DefineGroup('crt', src, depend = [''], CPPPATH = CPPPATH, CPPDEFINES = CPPDEFINES)
+
+Return('group')

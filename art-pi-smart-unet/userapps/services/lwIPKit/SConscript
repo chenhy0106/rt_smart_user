@@ -1,0 +1,26 @@
+from building import *
+
+cwd = GetCurrentDir()
+src = Glob('src/*.c') + Glob('src/*.cpp')
+CPPPATH = [cwd, cwd + '/src']
+
+CPPDEFINES = [
+        'RT_USING_NEWLIB',
+        'HAVE_CCONFIG_H',
+]
+
+group = DefineGroup('lwIPKit', src, depend = ['RT_USING_LWIP', 'SAL_USING_UNET'], CPPPATH = CPPPATH, CPPDEFINES = CPPDEFINES)
+
+if GetDepend(['RT_USING_LWIP212']):
+    lwipdir = 'lwip-2.1.2'
+    path = os.path.join(cwd, lwipdir)
+    if os.path.isfile(os.path.join(path, 'SConscript')):
+        group = group + SConscript(os.path.join(lwipdir, 'SConscript'))
+
+if GetDepend(['RT_USING_LWIP202']):
+    lwipdir = 'lwip-2.0.2'
+    path = os.path.join(cwd, lwipdir)
+    if os.path.isfile(os.path.join(path, 'SConscript')):
+        group = group + SConscript(os.path.join(lwipdir, 'SConscript'))
+
+Return('group')

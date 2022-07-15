@@ -1,0 +1,9 @@
+from building import *
+
+cwd     = GetCurrentDir()
+src     = ['arch/arm/syscall.S']
+CPPPATH = [cwd]
+
+group = DefineGroup('crt', src, depend = [''], CPPPATH = CPPPATH)
+
+Return('group')

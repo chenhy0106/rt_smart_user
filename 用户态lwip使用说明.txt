@@ -1,0 +1,13 @@
+1.编译内核
+进入kernel/bsp/imx6ull-artpi-smart 执行scons，得到rtthread.bin文件
+
+2.编译用户态app
+进入userapps目录执行scons，会在userapps/root/bin目下生成用户态app，如：lwIPKit.elf等
+
+3.启动网络协议栈并连接特定网卡设备
+./lwIPKit.elf &
+./lwIPKit.elf attach e1
+
+4.使用ping 命令查看网络是否连通
+
+

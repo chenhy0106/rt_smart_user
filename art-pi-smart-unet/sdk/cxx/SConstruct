@@ -1,0 +1,24 @@
+import sys
+import os
+
+# add building.py path
+sys.path = sys.path + [os.path.join('..', '..', 'tools')]
+
+from building import *
+
+# build for librtthread
+INSTALL_PATH = '../../userapps/sdk'
+CPPDEFINES = []
+CPPPATH    = []
+usr_root = os.path.abspath(os.path.join('..', '..', 'userapps'))
+
+target = BuildLibrary('cxx', 'SConscript', usr_root, build = 'static', CPPDEFINES=CPPDEFINES, CPPPATH = CPPPATH)
+env = GetEnv()
+
+install_libpath = os.path.join('lib', env['ARCH'], env['ARCH_CPU'])
+env.Alias("install", env.Install(os.path.join(INSTALL_PATH, install_libpath), target))
+
+target = BuildSharedLibrary('cxx', 'SConscript', usr_root, build = 'shared', CPPDEFINES=CPPDEFINES, CPPPATH = CPPPATH)
+env = GetEnv()
+install_libpath = os.path.join('lib', env['ARCH'], env['ARCH_CPU'])
+env.Alias("install", env.Install(os.path.join(INSTALL_PATH, install_libpath), target))

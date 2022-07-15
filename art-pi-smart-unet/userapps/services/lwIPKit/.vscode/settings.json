@@ -1,0 +1,5 @@
+{
+    "RT-Thread Smart.Program": "lwIPKit.elf",
+    "RT-Thread Smart.Target Path": "/services/",
+    "RT-Thread Smart.SDK ROOT": "../../.."
+}

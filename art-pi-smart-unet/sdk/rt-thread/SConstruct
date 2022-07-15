@@ -1,0 +1,24 @@
+import sys
+import os
+
+# add building.py path
+sys.path = sys.path + [os.path.join('..', '..', 'tools')]
+
+from building import *
+
+# build for librtthread
+usr_root = os.path.abspath(os.path.join('..', '..', 'userapps'))
+INSTALL_PATH = os.path.join(usr_root, 'sdk')
+
+target = BuildLibrary('rtthread', 'SConscript', usr_root, build = 'static', nosdk = 1)
+env = GetEnv()
+
+install_libpath = os.path.join('rt-thread', 'lib', env['ARCH'], env['ARCH_CPU'])
+env.Alias("install", env.Install(os.path.join(INSTALL_PATH, install_libpath), target))
+env.Alias("install", env.InstallFiles(os.path.join(INSTALL_PATH, 'rt-thread/include'), 'include', glob=['*.h']))
+env.Alias("install", env.InstallFiles(os.path.join(INSTALL_PATH, 'rt-thread/components'), 'components', glob=['*.h']))
+
+target = BuildSharedLibrary('rtthread', 'SConscript', usr_root, build = 'shared', nosdk = 1)
+env = GetEnv()
+install_libpath = os.path.join('rt-thread', 'lib', env['ARCH'], env['ARCH_CPU'])
+env.Alias("install", env.Install(os.path.join(INSTALL_PATH, install_libpath), target))
