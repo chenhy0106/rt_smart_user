@@ -31,6 +31,9 @@
  *                             add smp relevant macros
  * 2019-01-27     Bernard      change version number to v4.0.1
  * 2019-05-17     Bernard      change version number to v4.0.2
+ * 2019-12-20     Bernard      change version number to v4.0.3
+ * 2020-08-10     Meco Man     add macro for struct rt_device_ops
+ * 2020-10-23     Meco Man     define maximum value of ipc type
  */
 
 #ifndef __RT_DEF_H__
@@ -38,10 +41,6 @@
 
 /* include rtconfig header to import configuration */
 #include <rtconfig.h>
-
-#ifdef RT_USING_FINSH
-#undef RT_USING_FINSH
-#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -104,8 +103,19 @@ typedef rt_base_t                       rt_off_t;       /**< Type for offset */
 #define RT_UINT32_MAX                   0xffffffff      /**< Maxium number of UINT32 */
 #define RT_TICK_MAX                     RT_UINT32_MAX   /**< Maxium number of tick */
 
+/* maximum value of ipc type */
+#define RT_SEM_VALUE_MAX                RT_UINT16_MAX   /**< Maxium number of semaphore .value */
+#define RT_MUTEX_VALUE_MAX              RT_UINT16_MAX   /**< Maxium number of mutex .value */
+#define RT_MUTEX_HOLD_MAX               RT_UINT8_MAX    /**< Maxium number of mutex .hold */
+#define RT_MB_ENTRY_MAX                 RT_UINT16_MAX   /**< Maxium number of mailbox .entry */
+#define RT_MQ_ENTRY_MAX                 RT_UINT16_MAX   /**< Maxium number of message queue .entry */
+
 #if defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050)
 #define __CLANG_ARM
+#endif
+
+#if defined(__ARMCC_VERSION) && defined(__GNUC__)
+#define __ARMCC_GNUC__
 #endif
 
 /* Compiler Related Definitions */
@@ -204,11 +214,11 @@ typedef int (*init_fn_t)(void);
         };
         #define INIT_EXPORT(fn, level)                                                       \
             const char __rti_##fn##_name[] = #fn;                                            \
-            RT_USED const struct rt_init_desc __rt_init_desc_##fn SECTION(".rti_fn."level) = \
+            RT_USED const struct rt_init_desc __rt_init_desc_##fn SECTION(".rti_fn." level) = \
             { __rti_##fn##_name, fn};
     #else
         #define INIT_EXPORT(fn, level)                                                       \
-            RT_USED const init_fn_t __rt_init_##fn SECTION(".rti_fn."level) = fn
+            RT_USED const init_fn_t __rt_init_##fn SECTION(".rti_fn." level) = fn
     #endif
 #endif
 #else
@@ -353,6 +363,11 @@ struct rt_object
 #ifdef RT_USING_MODULE
     void      *module_id;                               /**< id of application module */
 #endif
+
+#ifdef RT_USING_LWP
+    int       lwp_ref_count;                            /**< ref count for lwp */
+#endif
+
     rt_list_t  list;                                    /**< list node of kernel object */
 };
 typedef struct rt_object *rt_object_t;                  /**< Type for kernel objects. */
@@ -481,6 +496,13 @@ typedef void (*rt_sighandler_t)(int signo);
 typedef siginfo_t rt_siginfo_t;
 
 #define RT_SIG_MAX          32
+
+#else
+
+#ifdef RT_USING_LWP
+#include <libc/libc_signal.h>
+#endif
+
 #endif
 /**@}*/
 
@@ -601,6 +623,16 @@ typedef struct {
     unsigned long sig[_LWP_NSIG_WORDS];
 } lwp_sigset_t;
 
+struct lwp_sigaction {
+    union {
+        void (*_sa_handler)(int);
+        void (*_sa_sigaction)(int, siginfo_t *, void *);
+    } __sa_handler;
+    lwp_sigset_t sa_mask;
+    int sa_flags;
+    void (*sa_restorer)(void);
+};
+
 struct rt_user_context
 {
     void *sp;
@@ -621,6 +653,10 @@ struct rt_thread
 
 #ifdef RT_USING_MODULE
     void       *module_id;                              /**< id of application module */
+#endif
+
+#ifdef RT_USING_LWP
+    int       lwp_ref_count;                            /**< ref count for lwp */
 #endif
 
     rt_list_t   list;                                   /**< the object list */
@@ -697,17 +733,30 @@ struct rt_thread
     rt_uint32_t *kernel_sp;                             /**< kernel stack point */
     rt_list_t   sibling;                                /**< next thread of same process */
 
-    rt_uint32_t signal;
+    lwp_sigset_t signal;
     lwp_sigset_t signal_mask;
-    lwp_sigset_t signal_mask_bak;
+    int signal_mask_bak;
     rt_uint32_t signal_in_process;
+#ifndef ARCH_MM_MMU
     lwp_sighandler_t signal_handler[32];
+#endif
     struct rt_user_context user_ctx;
 
     struct rt_wakeup wakeup;                            /**< wakeup data */
+    int exit_request;
+#ifdef RT_USING_USERSPACE
+    int step_exec;
+    int debug_attach_req;
+    int debug_ret_user;
+    int debug_suspend;
+    struct rt_hw_exp_stack *regs;
+    void * thread_idr;                                 /** lwp thread indicator */
+    int *clear_child_tid;
+#endif
+    int tid;
 #endif
 
-    rt_uint32_t user_data;                             /**< private user data beyond this thread */
+    rt_ubase_t user_data;                             /**< private user data beyond this thread */
 };
 typedef struct rt_thread *rt_thread_t;
 
@@ -732,17 +781,27 @@ typedef struct rt_thread *rt_thread_t;
 #define RT_WAITING_FOREVER              -1              /**< Block forever until get resource. */
 #define RT_WAITING_NO                   0               /**< Non-block. */
 
-struct rt_user_ipc
+/**
+ * Base structure of IPC object
+ */
+struct rt_ipc_object
 {
-    int type;
-    void* data;
+    struct rt_object parent;                            /**< inherit from rt_object */
+
+    rt_list_t        suspend_thread;                    /**< threads pended on this resource */
 };
 
 #ifdef RT_USING_SEMAPHORE
 /**
  * Semaphore structure
  */
-#define rt_semaphore rt_user_ipc
+struct rt_semaphore
+{
+    struct rt_ipc_object parent;                        /**< inherit from ipc_object */
+
+    rt_uint16_t          value;                         /**< value of semaphore. */
+    rt_uint16_t          reserved;                      /**< reserved field */
+};
 typedef struct rt_semaphore *rt_sem_t;
 #endif
 
@@ -750,7 +809,17 @@ typedef struct rt_semaphore *rt_sem_t;
 /**
  * Mutual exclusion (mutex) structure
  */
-#define rt_mutex rt_user_ipc
+struct rt_mutex
+{
+    struct rt_ipc_object parent;                        /**< inherit from ipc_object */
+
+    rt_uint16_t          value;                         /**< value of mutex */
+
+    rt_uint8_t           original_priority;             /**< priority of last thread hold the mutex */
+    rt_uint8_t           hold;                          /**< numbers of thread hold the mutex */
+
+    struct rt_thread    *owner;                         /**< current owner of mutex */
+};
 typedef struct rt_mutex *rt_mutex_t;
 #endif
 
@@ -765,7 +834,12 @@ typedef struct rt_mutex *rt_mutex_t;
 /*
  * event structure
  */
-#define rt_event rt_user_ipc
+struct rt_event
+{
+    struct rt_ipc_object parent;                        /**< inherit from ipc_object */
+
+    rt_uint32_t          set;                           /**< event set */
+};
 typedef struct rt_event *rt_event_t;
 #endif
 
@@ -773,7 +847,20 @@ typedef struct rt_event *rt_event_t;
 /**
  * mailbox structure
  */
-#define rt_mailbox rt_user_ipc
+struct rt_mailbox
+{
+    struct rt_ipc_object parent;                        /**< inherit from ipc_object */
+
+    rt_ubase_t          *msg_pool;                      /**< start address of message buffer */
+
+    rt_uint16_t          size;                          /**< size of message pool */
+
+    rt_uint16_t          entry;                         /**< index of messages in msg_pool */
+    rt_uint16_t          in_offset;                     /**< input offset of the message buffer */
+    rt_uint16_t          out_offset;                    /**< output offset of the message buffer */
+
+    rt_list_t            suspend_sender_thread;         /**< sender thread suspended on this mailbox */
+};
 typedef struct rt_mailbox *rt_mailbox_t;
 #endif
 
@@ -781,7 +868,23 @@ typedef struct rt_mailbox *rt_mailbox_t;
 /**
  * message queue structure
  */
-#define rt_messagequeue rt_user_ipc
+struct rt_messagequeue
+{
+    struct rt_ipc_object parent;                        /**< inherit from ipc_object */
+
+    void                *msg_pool;                      /**< start address of message queue */
+
+    rt_uint16_t          msg_size;                      /**< message size of each message */
+    rt_uint16_t          max_msgs;                      /**< max number of messages */
+
+    rt_uint16_t          entry;                         /**< index of messages in the queue */
+
+    void                *msg_queue_head;                /**< list head */
+    void                *msg_queue_tail;                /**< list tail */
+    void                *msg_queue_free;                /**< pointer indicated the free node of queue */
+
+    rt_list_t            suspend_sender_thread;         /**< sender thread suspended on this message queue */
+};
 typedef struct rt_messagequeue *rt_mq_t;
 #endif
 
@@ -957,6 +1060,8 @@ enum rt_device_class_type
 #define RT_DEVICE_CTRL_NETIF_GETMAC     0x40            /**< get mac address */
 
 typedef struct rt_device *rt_device_t;
+
+#ifdef RT_USING_DEVICE_OPS
 /**
  * operations set for device object
  */
@@ -970,6 +1075,7 @@ struct rt_device_ops
     rt_size_t (*write)  (rt_device_t dev, rt_off_t pos, const void *buffer, rt_size_t size);
     rt_err_t  (*control)(rt_device_t dev, int cmd, void *args);
 };
+#endif
 
 /**
  * WaitQueue structure
@@ -1020,6 +1126,29 @@ struct rt_device
 };
 
 /**
+ * Notify structure
+ */
+struct rt_device_notify
+{
+    void (*notify)(rt_device_t dev);
+    struct rt_device *dev;
+};
+
+#ifdef RT_USING_LWP
+struct rt_channel
+{
+    struct rt_ipc_object parent;                        /**< inherit from object */
+    struct rt_thread *reply;                            /**< the thread will be reply */
+    rt_list_t wait_msg;                                 /**< the wait queue of sender msg */
+    rt_list_t wait_thread;                              /**< the wait queue of sender thread */
+    rt_wqueue_t reader_queue;                           /**< channel poll queue */
+    rt_uint8_t  stat;                                   /**< the status of this channel */
+    rt_ubase_t  ref;
+};
+typedef struct rt_channel *rt_channel_t;
+#endif
+
+/**
  * block device geometry structure
  */
 struct rt_device_blk_geometry
@@ -1038,7 +1167,6 @@ struct rt_device_blk_sectors
     rt_uint64_t sector_end;                             /**< end sector   */
 };
 
-#if 0
 /**
  * cursor control command
  */
@@ -1071,9 +1199,7 @@ enum
     RTGRAPHIC_PIXEL_FORMAT_BGR888,
     RTGRAPHIC_PIXEL_FORMAT_ARGB888,
     RTGRAPHIC_PIXEL_FORMAT_ABGR888,
-    RTGRAPHIC_PIXEL_FORMAT_ARGB565,
-    RTGRAPHIC_PIXEL_FORMAT_ALPHA,
-    RTGRAPHIC_PIXEL_FORMAT_COLOR,
+    RTGRAPHIC_PIXEL_FORMAT_RESERVED,
 };
 
 /**
@@ -1121,14 +1247,12 @@ struct rt_device_graphic_ops
     void (*blit_line) (const char *pixel, int x, int y, rt_size_t size);
 };
 #define rt_graphix_ops(device)          ((struct rt_device_graphic_ops *)(device->user_data))
-#endif
 
 /**@}*/
 #endif
 
 /* definitions for libc */
 #include "rtlibc.h"
-#include <rtdevice.h>
 
 #ifdef __cplusplus
 }

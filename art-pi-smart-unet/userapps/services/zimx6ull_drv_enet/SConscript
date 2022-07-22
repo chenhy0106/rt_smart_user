@@ -1,0 +1,19 @@
+from building import *
+import os
+
+cwd = GetCurrentDir()
+src = Glob('src/*.c')
+CPPPATH = [cwd, cwd + "/src", cwd + "drv_enet/driver"]
+
+CPPDEFINES = [
+        'RT_USING_NEWLIB',
+        'HAVE_CCONFIG_H',
+]
+
+group = DefineGroup('imx6ull_drv_enet', src, depend = ['SAL_USING_UNET'], CPPPATH = CPPPATH, CPPDEFINES = CPPDEFINES)
+drv_enet = 'drv_enet'
+path = os.path.join(cwd, drv_enet)
+if os.path.isfile(os.path.join(path, 'SConscript')):
+        group = group + SConscript(os.path.join(drv_enet, 'SConscript'))
+
+Return('group')

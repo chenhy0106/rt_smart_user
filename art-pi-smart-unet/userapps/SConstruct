@@ -49,5 +49,5 @@ elif GetOption('make-in-directory'):
     dir = GetOption('make-in-directory')
     BuildDir(os.path.join(cwd, dir))
 else:
-    BuildDir(os.path.join(cwd, 'apps'))
+    # BuildDir(os.path.join(cwd, 'apps'))
     BuildDir(os.path.join(cwd, 'services'))

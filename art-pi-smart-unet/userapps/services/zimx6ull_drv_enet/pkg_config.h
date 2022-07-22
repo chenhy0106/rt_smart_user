@@ -1,0 +1,9 @@
+#ifndef ENET_PKG_CONFIG_H_
+#define ENET_PKG_CONFIG_H_
+
+// #define RT_USING_LWIP
+#define RT_USING_ENET1
+
+#define FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL 1
+
+#endif
