@@ -91,9 +91,8 @@
 
 #include <rtthread.h>
 
-#include <unet.h>
-extern int  unet_srv_channel;     /* kernel to unet */
-extern int  unet_eth_channel;     /* unet to kernel */
+
+#include <stdio.h>
 
 extern void netdev_low_level_set_ipaddr(void *netdev, const ip_addr_t *ip_addr);
 extern void netdev_low_level_set_netmask(void *netdev, const ip_addr_t *netmask);
@@ -259,7 +258,6 @@ netif_add(struct netif *netif,
 #if LWIP_IPV6
   s8_t i;
 #endif
-
   LWIP_ASSERT("No init function given", init != NULL);
 
   /* reset new interface configuration state */
@@ -313,28 +311,23 @@ netif_add(struct netif *netif,
 #if ENABLE_LOOPBACK && LWIP_LOOPBACK_MAX_PBUFS
   netif->loop_cnt_current = 0;
 #endif /* ENABLE_LOOPBACK && LWIP_LOOPBACK_MAX_PBUFS */
-
 #if LWIP_IPV4
   netif_set_addr(netif, ipaddr, netmask, gw);
 #endif /* LWIP_IPV4 */
-
   /* call user specified initialization function for netif */
   if (init(netif) != ERR_OK) {
     return NULL;
   }
-
   /* add this netif to the list */
   netif->next = netif_list;
   netif_list = netif;
   mib2_netif_added(netif);
-
 #if LWIP_IGMP
   /* start IGMP processing */
   if (netif->flags & NETIF_FLAG_IGMP) {
     igmp_start(netif);
   }
 #endif /* LWIP_IGMP */
-
   LWIP_DEBUGF(NETIF_DEBUG, ("netif: added interface %c%c IP",
     netif->name[0], netif->name[1]));
 #if LWIP_IPV4

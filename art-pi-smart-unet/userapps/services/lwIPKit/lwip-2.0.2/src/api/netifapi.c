@@ -38,6 +38,8 @@
  *
  */
 
+#include <stdio.h>
+
 #include "lwip/opt.h"
 
 #if LWIP_NETIF_API /* don't build if not configured for use in lwipopts.h */
@@ -60,7 +62,6 @@ netifapi_do_netif_add(struct tcpip_api_call_data *m)
   /* cast through void* to silence alignment warnings. 
    * We know it works because the structs have been instantiated as struct netifapi_msg */
   struct netifapi_msg *msg = (struct netifapi_msg*)(void*)m;
-  
   if (!netif_add( msg->netif,
 #if LWIP_IPV4
                   API_EXPR_REF(msg->msg.add.ipaddr),

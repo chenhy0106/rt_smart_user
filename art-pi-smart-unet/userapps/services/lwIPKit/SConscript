@@ -1,8 +1,8 @@
 from building import *
 
 cwd = GetCurrentDir()
-src = Glob('src/*.c') + Glob('src/*.cpp')
-CPPPATH = [cwd, cwd + '/src']
+src = Glob('src/*.c') + Glob('src/*.cpp') + Glob('cmd_channel/*.c') + Glob('cmd_channel/*.cpp')
+CPPPATH = [cwd, cwd + '/src', cwd + '/cmd_channel']
 
 CPPDEFINES = [
         'RT_USING_NEWLIB',
@@ -22,5 +22,7 @@ if GetDepend(['RT_USING_LWIP202']):
     path = os.path.join(cwd, lwipdir)
     if os.path.isfile(os.path.join(path, 'SConscript')):
         group = group + SConscript(os.path.join(lwipdir, 'SConscript'))
+
+group = group + SConscript(os.path.join("drv_enet", 'SConscript'))
 
 Return('group')

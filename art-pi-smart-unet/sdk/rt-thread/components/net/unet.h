@@ -5,7 +5,7 @@
 #include <rtdef.h>
 #include <lwp_shm.h>
 
-#include <unet_eth.h>
+// #include <unet_eth.h>
 
 /* The following are common IPC channel methods for unet. Note that the
  * argument 'cmd' might be a pointer or a handler of shared-memory. It depends

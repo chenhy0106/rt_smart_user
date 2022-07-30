@@ -81,6 +81,8 @@ int lwip_system_init(void)
         return 0;
     }
 
+    eth_system_device_init_private();
+
     /* set default netif to NULL */
     netif_default = RT_NULL;
     done_sem = rt_sem_create("done", 0, RT_IPC_FLAG_FIFO);

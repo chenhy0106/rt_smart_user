@@ -18,7 +18,7 @@ struct channel_cmd
 #define UETH_GPIOINIT_REQ 2
 #define UETH_CLOCKINIT_REQ 3
 #define UETH_DCACHE_REQ 4
-#define UETH_V2P 5
+#define UETH_V2P_REQ 5
 
 #define UETH_REMAP 1
 #define UETH_UNMAP 2

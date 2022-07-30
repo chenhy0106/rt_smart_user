@@ -29,6 +29,12 @@
         "fsl_common.h": "c",
         "mcimx6y2.h": "c",
         "random": "c",
-        "cstring": "c"
+        "cstring": "c",
+        "compile_log": "c",
+        "lwp_shm.h": "c",
+        "pbuf.h": "c",
+        "netdev.h": "c",
+        "sal_socket.h": "c",
+        "debug.h": "c"
     }
 }

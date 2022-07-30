@@ -20,6 +20,8 @@
 
 #include <lwip/api.h>
 
+#include "drv_eth.h"
+
 #define NIOCTL_GADDR        0x01
 
 /* private commands */
@@ -1107,7 +1109,7 @@ int main(int argc, char **argv)
 
     /* no arguments, we want to run lwIPKit as a server */
     if (argc < 2)
-    {
+    {        
         printf("lwIPKit: starts to run as the server");
         initialized = stack_init();
         if (initialized < 0)
@@ -1128,6 +1130,26 @@ int main(int argc, char **argv)
             rt_thread_t tid = rt_thread_create("ipdata", stack_data_input, NULL, 8192,
                 25, 10);            /* handle the input data */
             if (tid) rt_thread_startup(tid);
+
+            printf("lwIPKit: init eth dev...");
+            const char * eth_name;
+            initialized = imx6ul_eth_init(0, &eth_name);
+            if (initialized < 0)
+            {
+                printf(" ...failed!\n");
+                return -1;
+            }
+            else if (initialized > 0)   /* valid lwIPKit process exists */
+            {
+                printf(" ...skipped! Already initialized\n");
+                return 0;
+            } 
+            else 
+            {
+                printf("succeeded\n");
+            }
+            // eth_attach(eth_name);
+
             stack_run();            /* handle network requests, never return */
         }
     }

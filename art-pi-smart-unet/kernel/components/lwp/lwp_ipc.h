@@ -40,6 +40,7 @@ typedef struct rt_channel_msg *rt_channel_msg_t;
 int rt_channel_open(const char *name, int flags);
 rt_err_t rt_channel_close(int fd);
 rt_err_t rt_channel_send(int fd, rt_channel_msg_t data);
+rt_err_t rt_channel_send_interrupt(int fd, rt_channel_msg_t data);
 rt_err_t rt_channel_send_recv(int fd, rt_channel_msg_t data, rt_channel_msg_t data_ret);
 rt_err_t rt_channel_send_recv_timeout(int fd, rt_channel_msg_t data, rt_channel_msg_t data_ret, rt_int32_t time);
 rt_err_t rt_channel_reply(int fd, rt_channel_msg_t data);

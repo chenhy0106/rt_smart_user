@@ -164,4 +164,7 @@
 #define LWIP_DEBUGF(debug, message)
 #endif /* LWIP_DEBUG */
 
+
+#define DEBUG_PRINTF(...) printf(__VA_ARGS__)
+
 #endif /* LWIP_HDR_DEBUG_H */

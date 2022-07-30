@@ -722,7 +722,7 @@ static rt_err_t _rt_raw_channel_recv_timeout(rt_channel_t ch, rt_channel_msg_t d
             rt_timer_start(&(thread->thread_timer));
         }
         rt_hw_interrupt_enable(temp);
-
+        
         rt_schedule();              /* let the senders run */
 
         temp = rt_hw_interrupt_disable();
@@ -783,7 +783,27 @@ static int lwp_fd_new(int fdt_type)
     return fdt_fd_new(fdt);
 }
 
-static struct dfs_fd *lwp_fd_get(int fdt_type, int fd)
+static struct dfs_fd *fdt_fd_get_nolock(struct dfs_fdtable* fdt, int fd)
+{
+    struct dfs_fd *d;
+
+    if (fd < 0 || fd >= (int)fdt->maxfd)
+    {
+        return NULL;
+    }
+
+    d = fdt->fds[fd];
+
+    /* check dfs_fd valid or not */
+    if ((d == NULL) || (d->magic != DFS_FD_MAGIC))
+    {
+        return NULL;
+    }
+
+    return d;
+}
+
+static struct dfs_fd *lwp_fd_get(int fdt_type, int fd, int in_interrupt)
 {
     struct dfs_fdtable *fdt;
 
@@ -795,7 +815,15 @@ static struct dfs_fd *lwp_fd_get(int fdt_type, int fd)
     {
         fdt = dfs_fdtable_get();
     }
-    return fdt_fd_get(fdt, fd);
+    if (in_interrupt)
+    {
+        return fdt_fd_get_nolock(fdt, fd);
+    }
+    else
+    {
+        return fdt_fd_get(fdt, fd);
+    }
+    
 }
 
 static void lwp_fd_release(int fdt_type, int fd)
@@ -832,7 +860,7 @@ static void _chfd_free(int fd, int fdt_type)
 {
     struct dfs_fd *d;
 
-    d = lwp_fd_get(fdt_type, fd);
+    d = lwp_fd_get(fdt_type, fd, 0);
     if (d == RT_NULL)
     {
         return;
@@ -909,7 +937,7 @@ int lwp_channel_open(int fdt_type, const char *name, int flags)
     {
         goto quit;
     }
-    d = lwp_fd_get(fdt_type, fd);
+    d = lwp_fd_get(fdt_type, fd, 0);
     d->fnode = (struct dfs_fnode *)rt_malloc(sizeof(struct dfs_fnode));
     if (!d->fnode)
     {
@@ -947,11 +975,11 @@ quit:
     return fd;
 }
 
-static rt_channel_t fd_2_channel(int fdt_type, int fd)
+static rt_channel_t fd_2_channel(int fdt_type, int fd, int in_interrupt)
 {
     struct dfs_fd *d;
 
-    d = lwp_fd_get(fdt_type, fd);
+    d = lwp_fd_get(fdt_type, fd, in_interrupt);
     if (d)
     {
         rt_channel_t ch;
@@ -971,7 +999,7 @@ rt_err_t lwp_channel_close(int fdt_type, int fd)
     struct dfs_fd *d;
     struct dfs_fnode *fnode;
 
-    d = lwp_fd_get(fdt_type, fd);
+    d = lwp_fd_get(fdt_type, fd, 0);
     if (!d)
     {
         return -RT_EIO;
@@ -983,7 +1011,7 @@ rt_err_t lwp_channel_close(int fdt_type, int fd)
         return -RT_EIO;
     }
 
-    ch = fd_2_channel(fdt_type, fd);
+    ch = fd_2_channel(fdt_type, fd, 0);
     if (!ch)
     {
         return -RT_EIO;
@@ -998,10 +1026,21 @@ rt_err_t lwp_channel_close(int fdt_type, int fd)
     return 0;
 }
 
+rt_err_t lwp_channel_send_interrupt(int fdt_type, int fd, rt_channel_msg_t data)
+{
+    rt_channel_t ch;
+    ch = fd_2_channel(fdt_type, fd, 1);
+    if (ch)
+    {
+        return rt_raw_channel_send(ch, data);
+    }
+    return -RT_EIO;
+}
+
 rt_err_t lwp_channel_send(int fdt_type, int fd, rt_channel_msg_t data)
 {
     rt_channel_t ch;
-    ch = fd_2_channel(fdt_type, fd);
+    ch = fd_2_channel(fdt_type, fd, 0);
     if (ch)
     {
         return rt_raw_channel_send(ch, data);
@@ -1012,7 +1051,7 @@ rt_err_t lwp_channel_send(int fdt_type, int fd, rt_channel_msg_t data)
 rt_err_t lwp_channel_send_recv_timeout(int fdt_type, int fd, rt_channel_msg_t data, rt_channel_msg_t data_ret, rt_int32_t time)
 {
     rt_channel_t ch;
-    ch = fd_2_channel(fdt_type, fd);
+    ch = fd_2_channel(fdt_type, fd, 0);
     if (ch)
     {
         return rt_raw_channel_send_recv_timeout(ch, data, data_ret, time);
@@ -1023,7 +1062,7 @@ rt_err_t lwp_channel_send_recv_timeout(int fdt_type, int fd, rt_channel_msg_t da
 rt_err_t lwp_channel_reply(int fdt_type, int fd, rt_channel_msg_t data)
 {
     rt_channel_t ch;
-    ch = fd_2_channel(fdt_type, fd);
+    ch = fd_2_channel(fdt_type, fd, 0);
     if (ch)
     {
         return rt_raw_channel_reply(ch, data);
@@ -1034,7 +1073,7 @@ rt_err_t lwp_channel_reply(int fdt_type, int fd, rt_channel_msg_t data)
 rt_err_t lwp_channel_recv_timeout(int fdt_type, int fd, rt_channel_msg_t data, rt_int32_t time)
 {
     rt_channel_t ch;
-    ch = fd_2_channel(fdt_type, fd);
+    ch = fd_2_channel(fdt_type, fd, 0);
     if (ch)
     {
         return rt_raw_channel_recv_timeout(ch, data, time);
@@ -1055,6 +1094,11 @@ rt_err_t rt_channel_close(int fd)
 rt_err_t rt_channel_send(int fd, rt_channel_msg_t data)
 {
     return lwp_channel_send(FDT_TYPE_KERNEL, fd, data);
+}
+
+rt_err_t rt_channel_send_interrupt(int fd, rt_channel_msg_t data)
+{
+    return lwp_channel_send_interrupt(FDT_TYPE_KERNEL, fd, data);
 }
 
 rt_err_t rt_channel_send_recv_timeout(int fd, rt_channel_msg_t data, rt_channel_msg_t data_ret, rt_int32_t time)

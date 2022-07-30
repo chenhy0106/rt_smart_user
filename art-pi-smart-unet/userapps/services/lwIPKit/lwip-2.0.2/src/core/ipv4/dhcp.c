@@ -78,6 +78,8 @@
 
 #include <string.h>
 
+#include <stdio.h>
+
 /** DHCP_CREATE_RAND_XID: if this is set to 1, the xid is created using
  * LWIP_RAND() (this overrides DHCP_GLOBAL_XID)
  */
@@ -980,7 +982,6 @@ dhcp_discover(struct netif *netif)
       dhcp_option_byte(dhcp, dhcp_discover_request_options[i]);
     }
     dhcp_option_trailer(dhcp);
-
     LWIP_DEBUGF(DHCP_DEBUG | LWIP_DBG_TRACE, ("dhcp_discover: realloc()ing\n"));
     pbuf_realloc(dhcp->p_out, sizeof(struct dhcp_msg) - DHCP_OPTIONS_LEN + dhcp->options_out_len);
 

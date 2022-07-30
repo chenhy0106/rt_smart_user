@@ -60,6 +60,8 @@
 #include LWIP_HOOK_FILENAME
 #endif
 
+#include <stdio.h>
+
 const struct eth_addr ethbroadcast = {{0xff,0xff,0xff,0xff,0xff,0xff}};
 const struct eth_addr ethzero = {{0,0,0,0,0,0}};
 
