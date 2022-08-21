@@ -5,7 +5,6 @@ cwd  = GetCurrentDir()
 src  = Glob('*.c')
 CPPDEFINES = ['CHIP_MX6UL', 'CPU_MCIMX6Y2DVM09']
 path = [cwd]
-list = os.listdir(cwd)
 
 group = DefineGroup('drv_enet', src, depend = ['SAL_USING_UNET'], CPPPATH = path, CPPDEFINES = CPPDEFINES)
 

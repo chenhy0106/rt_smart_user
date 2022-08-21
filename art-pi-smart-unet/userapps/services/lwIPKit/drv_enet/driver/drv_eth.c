@@ -142,9 +142,6 @@ static struct rt_imx6ul_ethps _imx6ul_eth_device[DEV_ENET_MAX] =
 #endif
 };
 
-// extern uint8_t *buffer_vaddr_rx[ENET_RXBD_NUM];
-// extern uint8_t *buffer_vaddr_tx[ENET_TXBD_NUM];
-
 #ifdef RT_USING_LWIP
 #define eth_device_linkchange(x, y) eth_device_linkchange(x, y)
 #else
@@ -167,6 +164,18 @@ void imx6ul_eth_link_change(struct rt_imx6ul_ethps *imx6ul_device,rt_bool_t up)
     }
 }
 
+void page_alloc(size_t memsize, void **addr)
+{
+    size_t alloc_size = memsize + SYS_PAGE_SIZE * 2;
+    void * addr_start = malloc(alloc_size);
+    rt_memset(addr_start, 0, alloc_size);
+
+    long mask = SYS_PAGE_SIZE - 1;
+    *addr = (void*)((long)(addr_start + SYS_PAGE_SIZE) & ~mask);
+
+    return;
+}
+
 rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
 {
     void *tx_buff_addr = RT_NULL;
@@ -180,50 +189,70 @@ rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
         LOG_E("ERROR: alloc mem not enough for enet driver");
         return RT_ERROR;
     }
-    // rx_buff_addr = (void*)rt_pages_alloc(RX_BUFFER_INDEX_NUM);
-    rx_buff_addr = rt_malloc(SYS_PAGE_SIZE<<RX_BUFFER_INDEX_NUM);
+
+    size_t rx_buff_memsize = SYS_PAGE_SIZE<<RX_BUFFER_INDEX_NUM;
+    size_t tx_buff_memsize = SYS_PAGE_SIZE<<TX_BUFFER_INDEX_NUM;
+    size_t rx_bd_memsize = SYS_PAGE_SIZE<<RX_BD_INDEX_NUM;
+    size_t tx_bd_memsize = SYS_PAGE_SIZE<<TX_BD_INDEX_NUM;
+    size_t total_memsize = rx_buff_memsize + tx_buff_memsize + rx_bd_memsize + tx_bd_memsize;
+
+    void *mem_align= RT_NULL;
+    page_alloc(total_memsize, &mem_align);
+    if (!mem_align)
+    {
+        return RT_ERROR;
+    }
+    
+    rx_buff_addr = mem_align;
+    mem_align += rx_buff_memsize;
     if(!rx_buff_addr)
     {
         LOG_E("ERROR: rx buff page alloc failed");
         return RT_ERROR;
     }
     // buffConfig->rxBufferAlign = (void *)rt_ioremap_nocache(virtual_to_physical(rx_buff_addr), (SYS_PAGE_SIZE<<RX_BUFFER_INDEX_NUM));
-    buffConfig->rxBufferAlign = (void *)ueth_remap(ueth_v2p(rx_buff_addr), UETH_REMAP_NOCACHE, (SYS_PAGE_SIZE<<RX_BUFFER_INDEX_NUM));
+    // buffConfig->rxBufferAlign = ueth_remap(ueth_v2p(rx_buff_addr), UETH_REMAP_NOCACHE, rx_buff_memsize);
+    buffConfig->rxBufferAlign = rx_buff_addr;
     buffConfig->rxPhyBufferAlign = ueth_v2p(rx_buff_addr);
-
+    
     // tx_buff_addr = (void*)rt_pages_alloc(TX_BUFFER_INDEX_NUM);
-    tx_buff_addr = rt_malloc(SYS_PAGE_SIZE<<TX_BUFFER_INDEX_NUM);
+    tx_buff_addr = mem_align;
+    mem_align += tx_buff_memsize;
     if(!tx_buff_addr)
     {
         LOG_E("ERROR: tx buff page alloc failed");
         return RT_ERROR;
     }
     // buffConfig->txBufferAlign = (void *)rt_ioremap_nocache(virtual_to_physical(tx_buff_addr), (SYS_PAGE_SIZE<<TX_BUFFER_INDEX_NUM));
-    buffConfig->txBufferAlign = (void *)ueth_remap(ueth_v2p(tx_buff_addr), UETH_REMAP_NOCACHE, (SYS_PAGE_SIZE<<TX_BUFFER_INDEX_NUM));
+    // buffConfig->txBufferAlign = ueth_remap(ueth_v2p(tx_buff_addr), UETH_REMAP_NOCACHE, tx_buff_memsize);
+    buffConfig->txBufferAlign = tx_buff_addr;
     buffConfig->txPhyBufferAlign = ueth_v2p(tx_buff_addr);
-
+    
     // rx_bd_addr = (void*)rt_pages_alloc(RX_BD_INDEX_NUM);
-    rx_bd_addr = rt_malloc(SYS_PAGE_SIZE<<RX_BD_INDEX_NUM);
+    rx_bd_addr = mem_align;
+    mem_align += rx_bd_memsize;
     if(!rx_bd_addr)
     {
         LOG_E("ERROR: rx bd page alloc failed");
         return RT_ERROR;
     }
-    buffConfig->rxBdStartAddrAlign = (void *)ueth_remap(ueth_v2p(rx_bd_addr), UETH_REMAP_NOCACHE, (SYS_PAGE_SIZE<<RX_BD_INDEX_NUM));
+    buffConfig->rxBdStartAddrAlign = ueth_remap(ueth_v2p(rx_bd_addr), UETH_REMAP_NOCACHE, rx_bd_memsize);
     // buffConfig->rxBdStartAddrAlign = (void *)rt_ioremap_nocache(virtual_to_physical(rx_bd_addr), (SYS_PAGE_SIZE<<RX_BD_INDEX_NUM));
+    // buffConfig->rxBdStartAddrAlign = rx_bd_addr;
     buffConfig->rxPhyBdStartAddrAlign = ueth_v2p(rx_bd_addr);
-
+   
     // tx_bd_addr = (void*)rt_pages_alloc(TX_BD_INDEX_NUM);
-    tx_bd_addr = rt_malloc(SYS_PAGE_SIZE<<TX_BD_INDEX_NUM);
+    tx_bd_addr = mem_align;
     if(!tx_bd_addr)
     {
         LOG_E("ERROR: tx bd page alloc failed");
         return RT_ERROR;
     }
     // buffConfig->txBdStartAddrAlign = (void *)rt_ioremap_nocache(virtual_to_physical(tx_bd_addr), (SYS_PAGE_SIZE<<TX_BD_INDEX_NUM));
-    buffConfig->txBdStartAddrAlign = (void *)ueth_remap(ueth_v2p(tx_bd_addr), UETH_REMAP_NOCACHE, (SYS_PAGE_SIZE<<TX_BD_INDEX_NUM));
+    buffConfig->txBdStartAddrAlign = ueth_remap(ueth_v2p(tx_bd_addr), UETH_REMAP_NOCACHE, tx_bd_memsize);
+    // buffConfig->txBdStartAddrAlign = tx_bd_addr;
     buffConfig->txPhyBdStartAddrAlign = ueth_v2p(tx_bd_addr);
-
+    
     return RT_EOK;
 }
 
@@ -279,7 +308,7 @@ static rt_err_t rt_imx6ul_eth_init(rt_device_t dev)
     {
         return state;
     }
-    ENET_Init(base_addr, handle, config, buffConfig, &imx6ul_device->dev_addr[0], SYS_CLOCK_HZ);
+    ENET_Init(base_addr, handle, config, buffConfig, imx6ul_device->dev_addr, SYS_CLOCK_HZ);
     ENET_ActiveRead(base_addr);
 
     // ENET_DisableInterrupts(base_addr,ENET_RX_INTERRUPT);
@@ -339,7 +368,7 @@ static rt_err_t rt_imx6ul_eth_control(rt_device_t dev, int cmd, void *args)
                 imx6ul_device->dev_addr[5] = uid_crc & 0xff;
             }
 
-            rt_memcpy(args, imx6ul_device->dev_addr, MAX_ADDR_LEN);
+            memcpy(args, imx6ul_device->dev_addr, MAX_ADDR_LEN);
         }
         else
         {
@@ -374,7 +403,7 @@ static status_t read_data_from_eth(rt_device_t dev,void *read_data,uint16_t *rea
         if(status == kStatus_ENET_RxFrameError)
         {
             /*recv error happend reinitialize mac*/
-            ENET_Init(base_addr, handle, config, buffConfig, &imx6ul_device->dev_addr[0], SYS_CLOCK_HZ);
+            ENET_Init(base_addr, handle, config, buffConfig, imx6ul_device->dev_addr, SYS_CLOCK_HZ);
             ENET_ActiveRead(base_addr);
             return kStatus_ENET_RxFrameError;
         }
@@ -391,7 +420,6 @@ static status_t read_data_from_eth(rt_device_t dev,void *read_data,uint16_t *rea
 /* transmit data*/
 rt_err_t rt_imx6ul_eth_tx(rt_device_t dev, struct pbuf *p)
 {
-    rt_err_t ret = RT_ERROR;
     struct pbuf *q = RT_NULL;
     uint16_t offset = 0;
     uint32_t last_flag = 0;
@@ -414,6 +442,7 @@ rt_err_t rt_imx6ul_eth_tx(rt_device_t dev, struct pbuf *p)
             last_flag = 0;
         }
         status = ENET_SendFrame(base_addr, handle, q->payload, q->len,last_flag);
+
         offset = offset + q->len;
         if(status == kStatus_Success)
         {
@@ -427,7 +456,7 @@ rt_err_t rt_imx6ul_eth_tx(rt_device_t dev, struct pbuf *p)
     {
         LOG_E("net error send length %d exceed max length",offset);
     }
-    return ret;
+    return RT_EOK;
 }
 
 struct pbuf *rt_imx6ul_eth_rx(rt_device_t dev)
@@ -650,7 +679,7 @@ int imx6ul_eth_init(int eth_select, const char ** eth_name)
 
     if (ipc_service_init() == RT_ERROR)
     {
-        return RT_ERROR;
+        return -RT_ERROR;
     }
 
 
@@ -671,6 +700,7 @@ int imx6ul_eth_init(int eth_select, const char ** eth_name)
         
         rt_imx6ul_eth_init((rt_device_t)(&(_imx6ul_eth_device[idx].parent)));
 #endif
+        eth_init_done = 1;
         /* register eth device */
         state = eth_device_init(&(_imx6ul_eth_device[idx].parent), _imx6ul_eth_device[idx].mac_name);
         if (RT_EOK == state)
@@ -708,8 +738,6 @@ int imx6ul_eth_init(int eth_select, const char ** eth_name)
     {
         *eth_name = _imx6ul_eth_device[eth_select].mac_name;
     }
-
-    eth_init_done = 1;
 
     return state;
 }

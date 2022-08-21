@@ -174,6 +174,8 @@ void rt_hw_trap_pabt(struct rt_hw_exp_stack *regs)
     {
         return;
     }
+    rt_backtrace();
+    rt_hw_show_register(regs);
     check_user_fault(regs, 4, "User prefetch abort");
 #endif
     rt_unwind(regs, 4);
@@ -204,6 +206,8 @@ void rt_hw_trap_dabt(struct rt_hw_exp_stack *regs)
     {
         return;
     }
+    rt_backtrace();
+    rt_hw_show_register(regs);
     check_user_fault(regs, 8, "User data abort");
 #endif
     rt_unwind(regs, 8);

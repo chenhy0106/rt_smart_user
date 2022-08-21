@@ -14,13 +14,15 @@ const char *ueth_int_name = "ueth_int";
 rt_err_t ipc_service_init()
 {
     ueth_ueth_srv_channel = rt_channel_open(ueth_srv_name, O_RDWR);
-    if (ueth_ueth_srv_channel < 0){
+    if (ueth_ueth_srv_channel < 0)
+    {
         printf("open %s failed\n", ueth_srv_name);
         return RT_ERROR;
     }
 
     ueth_int_channel = rt_channel_open(ueth_int_name, O_RDWR);
-    if (ueth_int_channel < 0){
+    if (ueth_int_channel < 0)
+    {
         printf("open %s failed\n", ueth_int_name);
         return RT_ERROR;
     }
@@ -45,6 +47,7 @@ void *ueth_v2p(void * addr)
         lwp_shmdt(cmd);
     }
 
+    lwp_shmrm(shmid);
     return res;
 
 }
@@ -62,6 +65,7 @@ void *ueth_remap(void * addr, int type, size_t size)
         lwp_shmdt(cmd);
     }
 
+    lwp_shmrm(shmid);
     return res;
 }
 
@@ -75,6 +79,8 @@ void ueth_gpioinit(void *gpio, size_t size)
         channel_cmd_send_recv(ueth_ueth_srv_channel, (void *)(size_t)shmid);
         lwp_shmdt(cmd);
     }
+
+    lwp_shmrm(shmid);
 }
 
 void ueth_init_clock() 
@@ -86,32 +92,38 @@ void ueth_init_clock()
         channel_cmd_send_recv(ueth_ueth_srv_channel, (void *)(size_t)shmid);
         lwp_shmdt(cmd);
     }
+
+    lwp_shmrm(shmid);
 }
 
 void ueth_dcache_clean(void *paddr, size_t size)
 {
-    // int shmid = channel_compose_cmd3(UETH_DCACHE_REQ, (void*)0, (void*)UETH_DCACHE_CLEAN, paddr, sizeof(size_t));
-    // struct channel_cmd *cmd = (struct channel_cmd*)lwp_shmat(shmid, NULL);
-    // if (cmd)
-    // {
-    //     memcpy(CHANNEL_CMD_DATA(cmd), (void*)&size, sizeof(size_t));
-    //     channel_cmd_send_recv(ueth_ueth_srv_channel, (void *)(size_t)shmid);
-    //     lwp_shmdt(cmd);
-    // }
-    // rt_hw_cpu_dcache_clean_user(paddr, size);
+    int shmid = channel_compose_cmd3(UETH_DCACHE_REQ, (void*)0, (void*)UETH_DCACHE_CLEAN, paddr, sizeof(size_t));
+    struct channel_cmd *cmd = (struct channel_cmd*)lwp_shmat(shmid, NULL);
+    if (cmd)
+    {
+        memcpy(CHANNEL_CMD_DATA(cmd), (void*)&size, sizeof(size_t));
+        channel_cmd_send_recv(ueth_ueth_srv_channel, (void *)(size_t)shmid);
+        lwp_shmdt(cmd);
+    }
+
+    lwp_shmrm(shmid);
+    return;
 }
 
 void ueth_dcache_invalid(void *paddr, size_t size)
 {
-    // int shmid = channel_compose_cmd3(UETH_DCACHE_REQ, (void*)0, (void*)UETH_DCACHE_INVALID, paddr, 0);
-    // struct channel_cmd *cmd = (struct channel_cmd*)lwp_shmat(shmid, NULL);
-    // if (cmd)
-    // {
-    //     memcpy(CHANNEL_CMD_DATA(cmd), (void*)&size, sizeof(size_t));
-    //     channel_cmd_send_recv(ueth_ueth_srv_channel, (void *)(size_t)shmid);
-    //     lwp_shmdt(cmd);
-    // }
-    // rt_hw_cpu_dcache_invalidate_user(paddr, size);
+    int shmid = channel_compose_cmd3(UETH_DCACHE_REQ, (void*)0, (void*)UETH_DCACHE_INVALID, paddr, sizeof(size_t));
+    struct channel_cmd *cmd = (struct channel_cmd*)lwp_shmat(shmid, NULL);
+    if (cmd)
+    {
+        memcpy(CHANNEL_CMD_DATA(cmd), (void*)&size, sizeof(size_t));
+        channel_cmd_send_recv(ueth_ueth_srv_channel, (void *)(size_t)shmid);
+        lwp_shmdt(cmd);
+    }
+
+    lwp_shmrm(shmid);
+    return;
 }
 
 void ueth_hw_interrupt_install(int vector, void * param) {
@@ -121,6 +133,8 @@ void ueth_hw_interrupt_install(int vector, void * param) {
     {
         channel_cmd_send_recv(ueth_ueth_srv_channel, (void *)(size_t)shmid);
         lwp_shmdt(cmd);
+        
     }
-
+    
+    lwp_shmrm(shmid);
 }

@@ -573,7 +573,7 @@ lwip_accept(int s, struct sockaddr *addr, socklen_t *addrlen)
   sock_set_errno(sock, 0);
   return newsock;
 }
-
+#include <stdio.h>
 int
 lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
 {
@@ -584,12 +584,14 @@ lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
 
   sock = get_socket(s);
   if (!sock) {
+    printf("****%s %d\n", __FILE__, __LINE__);
     return -1;
   }
 
   if (!SOCK_ADDR_TYPE_MATCH(name, sock)) {
     /* sockaddr does not match socket type (IPv4/IPv6) */
     sock_set_errno(sock, err_to_errno(ERR_VAL));
+    printf("****%s %d\n", __FILE__, __LINE__);
     return -1;
   }
 
@@ -617,6 +619,7 @@ lwip_bind(int s, const struct sockaddr *name, socklen_t namelen)
   if (err != ERR_OK) {
     LWIP_DEBUGF(SOCKETS_DEBUG, ("lwip_bind(%d) failed, err=%d\n", s, err));
     sock_set_errno(sock, err_to_errno(err));
+    printf("****%s %d\n", __FILE__, __LINE__);
     return -1;
   }
 
@@ -1600,7 +1603,7 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
   struct lwip_sock *sock;
   struct lwip_select_cb *scb;
   int last_select_cb_ctr;
-  int notify_id = 0;    /* *RT-Thread* */
+  // int notify_id = 0;    /* *RT-Thread* */
   SYS_ARCH_DECL_PROTECT(lev);
 
   LWIP_UNUSED_ARG(len);
@@ -1681,18 +1684,18 @@ event_callback(struct netconn *conn, enum netconn_evt evt, u16_t len)
       }
   }
 
-  if(mask != 0)
-  {
-      notify_id = channel_compose_cmd2(UNET_WAKEUP_REQUEST, sock, (void *)(unsigned long)s, 0);
-      if(notify_id  >= 0)
-      {
-        channel_cmd_send(unet_channel, (void *)(unsigned long)notify_id);
-      }
-      else
-      {
-        rt_kprintf("create msg error\n");
-      }
-  }
+  // if(mask != 0)
+  // {
+  //     notify_id = channel_compose_cmd2(UNET_WAKEUP_REQUEST, sock, (void *)(unsigned long)s, 0);
+  //     if(notify_id  >= 0)
+  //     {
+  //       channel_cmd_send(unet_channel, (void *)(unsigned long)notify_id);
+  //     }
+  //     else
+  //     {
+  //       rt_kprintf("create msg error\n");
+  //     }
+  // }
 
   if (sock->select_waiting == 0) {
     /* noone is waiting for this socket, no need to check select_cb_list */

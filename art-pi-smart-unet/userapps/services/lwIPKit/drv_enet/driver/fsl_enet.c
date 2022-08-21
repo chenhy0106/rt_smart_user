@@ -475,9 +475,12 @@ static void ENET_SetTxBufferDescriptors(volatile enet_tx_bd_struct_t *txBdStartA
     {
 
         /* Set data buffer address. */
-        curBuffDescrip->buffer = (uint8_t *)((uint32_t)&txBuffStartAlign[count * txBuffSizeAlign]);
+        // curBuffDescrip->buffer = (uint8_t *)((uint32_t)&txBuffStartAlign[(-1) * count * txBuffSizeAlign]);
+        // curBuffDescrip->buffer = (uint8_t *)ueth_v2p((void*)&txBuffStartAlign_vaddr[count * txBuffSizeAlign]);
         // curBuffDescrip->buffer_vaddr = (uint8_t *)((uint32_t)&txBuffStartAlign_vaddr[count * txBuffSizeAlign]);
-        buffer_vaddr_tx[count] = (uint8_t *)((uint32_t)&txBuffStartAlign_vaddr[count * txBuffSizeAlign]);
+        // buffer_vaddr_tx[count] = (uint8_t *)((void*)&txBuffStartAlign_vaddr[count * txBuffSizeAlign]);
+        curBuffDescrip->buffer = (uint8_t *)ueth_v2p((void*)&txBuffStartAlign_vaddr[count * txBuffSizeAlign]);
+        buffer_vaddr_tx[count] = (uint8_t *)ueth_remap(curBuffDescrip->buffer, UETH_REMAP_NOCACHE, txBuffSizeAlign);
         /* Initializes data length. */
         curBuffDescrip->length = 0;
         /* Sets the crc. */
@@ -513,9 +516,10 @@ static void ENET_SetRxBufferDescriptors(volatile enet_rx_bd_struct_t *rxBdStartA
     for (count = 0; count < rxBdNumber; count++)
     {
         /* Set data buffer and the length. */
-        curBuffDescrip->buffer = (uint8_t *)((void *)&rxBuffStartAlign[count * rxBuffSizeAlign]);
+        // curBuffDescrip->buffer = (uint8_t *)((void *)&rxBuffStartAlign[(-1) * count * rxBuffSizeAlign]);
+        curBuffDescrip->buffer = (uint8_t *)ueth_v2p((void*)&rxBuffStartAlign_vaddr[count * rxBuffSizeAlign]);
         // curBuffDescrip->buffer_vaddr = (uint8_t *)((void *)&rxBuffStartAlign_vaddr[count * rxBuffSizeAlign]);
-        buffer_vaddr_rx[count] = (uint8_t *)((void *)&rxBuffStartAlign_vaddr[count * rxBuffSizeAlign]);
+        buffer_vaddr_rx[count] = (uint8_t *)ueth_remap(curBuffDescrip->buffer, UETH_REMAP_NOCACHE, rxBuffSizeAlign);
         curBuffDescrip->length = 0;
         /* Initializes the buffer descriptors with empty bit. */
         curBuffDescrip->control = ENET_BUFFDESCRIPTOR_RX_EMPTY_MASK;

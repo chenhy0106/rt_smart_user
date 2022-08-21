@@ -1,0 +1,13 @@
+from building import *
+
+src = Glob('*.c') + Glob('usocket/*.c')
+cwd = GetCurrentDir()
+CPPPATH = [cwd, cwd+'/usocket']
+
+CPPDEFINES = [
+    'HAVE_CCONFIG_H',
+]
+
+group = DefineGroup('iperf', src, CPPPATH=CPPPATH, depend = [''], CPPDEFINES = CPPDEFINES)
+
+Return('group')

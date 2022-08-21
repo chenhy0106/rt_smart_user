@@ -35,6 +35,20 @@
         "pbuf.h": "c",
         "netdev.h": "c",
         "sal_socket.h": "c",
-        "debug.h": "c"
+        "debug.h": "c",
+        "regex": "c",
+        "rtservice.h": "c",
+        "api.h": "c",
+        "af_inet.h": "c",
+        "dfs_file.h": "c",
+        "netdev_ipaddr.h": "c",
+        "socket.h": "c",
+        "netdb.h": "c",
+        "time.h": "c",
+        "select.h": "c",
+        "dfs.h": "c",
+        "dfs_private.h": "c",
+        "usocket.h": "c",
+        "page.h": "c"
     }
 }

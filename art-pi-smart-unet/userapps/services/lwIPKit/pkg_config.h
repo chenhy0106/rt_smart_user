@@ -1,7 +1,19 @@
 #ifndef PKG_CONFIG_H__
 #define PKG_CONFIG_H__
 
-#define POLL_INT
+// #define POLL_INT
+
+// #define LWIP_DEBUG
+// #define RT_LWIP_ICMP_DEBUG
+// #define RT_LWIP_IP_DEBUG
+// #define RT_LWIP_UDP_DEBUG
+// #define RT_LWIP_DHCP_DEBUG
+// #define RT_LWIP_NETIF_DEBUG
+// #define RT_LWIP_ETHARP_DEBUG
+// #define RT_LWIP_DNS_DEBUG
+// #define RT_LWIP_PBUF_DEBUG
+// #define RT_LWIP_MEMP_DEBUG
+// #define RT_LWIP_SOCKETS_DEBUG
 
 #define LWIPKIT
 #define RT_USING_LWIP
@@ -58,5 +70,7 @@
 
 #define RT_USING_ENET1
 #define FSL_SDK_DISABLE_DRIVER_CLOCK_CONTROL 1
+
+#define NETDEV_IPV4 1
 
 #endif

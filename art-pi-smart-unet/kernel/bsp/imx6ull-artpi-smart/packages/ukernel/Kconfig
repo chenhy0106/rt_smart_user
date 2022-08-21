@@ -1,0 +1,82 @@
+
+# Kconfig file for kernel components of RT-Thread Smart
+menuconfig PKG_USING_UKERNEL
+    bool "Enable kernel components of RT-Thread Smart"
+    depends on RT_USING_SMART
+    default n
+
+if PKG_USING_UKERNEL
+
+    config PKG_UKERNEL_PATH
+        string
+        default "/realthread-packages/smart/ukernel"
+
+    choice
+        prompt "Version"
+        default PKG_USING_UKERNEL_LATEST_VERSION
+        help
+            Select the package version
+
+        config PKG_USING_UKERNEL_V100
+            bool "v1.0.0"
+
+        config PKG_USING_UKERNEL_LATEST_VERSION
+            bool "latest"
+    endchoice
+
+    config PKG_UKERNEL_VER
+       string
+       default "v1.0.0"    if PKG_USING_UKERNEL_V100
+       default "latest"    if PKG_USING_UKERNEL_LATEST_VERSION
+
+    config LWP_USING_CORE_DUMP
+        bool "Enable the coredump support."
+        default n
+
+        menu "Core Dump"
+            depends on LWP_USING_CORE_DUMP
+
+            config LWP_CORE_DUMP_TO_FILE
+                bool "Enable lwp core dump to file"
+                default n
+
+            config LWP_CORE_DUMP_DIR
+                string "Lwp core dump file directory"
+                default "/mnt/usr"
+                depends on LWP_CORE_DUMP_TO_FILE
+
+            config LWP_CORE_DUMP_FILE_NAME_LEN
+                int "Lwp core dump file full name (with path) length"
+                default 256
+                depends on LWP_CORE_DUMP_TO_FILE
+
+            config LWP_CORE_DUMP_LEN_LIMIT
+                int "Lwp core dump file size limit"
+                default 8192
+                depends on !LWP_CORE_DUMP_TO_FILE
+        endmenu
+
+    config RT_USING_GDBSERVER
+        bool "Enable the GDB server support."
+        default n
+
+    config RT_USING_DFS_UFS
+        bool "Enable the user-mode filesystems."
+        default n
+        depends on RT_USING_DFS
+        help
+            UFS allows file systems to run as a server in the user-mode.
+
+    config SAL_USING_UNET
+        bool "Enable the user-mode network protocol statck."
+        default n
+
+    config RT_USING_MSH_KSHELL_AGENT
+        bool "Enable the kshell agent for user-mode programs to make request on msh."
+        default n
+
+    config RT_USING_NETIF_LOOPBACK
+        bool "Enable the netic loopback."
+        default n
+
+endif
