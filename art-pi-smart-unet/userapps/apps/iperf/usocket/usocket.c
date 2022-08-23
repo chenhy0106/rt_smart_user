@@ -260,6 +260,14 @@ int u_socket (int domain, int type, int protocol)
 {
     if (usocket_channel < 0)
     {
+        if (u_socket_init() == -1)
+        {
+            return -RT_ERROR;
+        }
+    }
+    
+    if (usocket_channel < 0)
+    {
         rt_kprintf("u_socket channel invalid\n");
         return -RT_ERROR;
     }
@@ -301,6 +309,14 @@ out:
 
 int u_bind (int socket, const struct sockaddr *name, socklen_t namelen)
 {
+    if (usocket_channel < 0)
+    {
+        if (u_socket_init() == -1)
+        {
+            return -RT_ERROR;
+        }
+    }
+
     // if (!lwp_user_accessable((void *)name, namelen))
     // {
     //     return -EFAULT;
@@ -328,6 +344,14 @@ int u_bind (int socket, const struct sockaddr *name, socklen_t namelen)
 
 int u_connect (int socket, const struct sockaddr *name, socklen_t namelen)
 {
+    if (usocket_channel < 0)
+    {
+        if (u_socket_init() == -1)
+        {
+            return -RT_ERROR;
+        }
+    }
+
     // if (!lwp_user_accessable((void *)name, namelen))
     // {
     //     return -EFAULT;
@@ -357,6 +381,14 @@ int u_connect (int socket, const struct sockaddr *name, socklen_t namelen)
 }
 int u_listen (int socket, int backlog)
 {
+    if (usocket_channel < 0)
+    {
+        if (u_socket_init() == -1)
+        {
+            return -RT_ERROR;
+        }
+    }
+
     int res = -1;
     struct unet_cmd *cmd;
     int shmid = compose_cmd2(UNET_SRV_CMD_LISTEN, (void*)socket, (void*)backlog, 0, &cmd);
@@ -371,6 +403,14 @@ int u_listen (int socket, int backlog)
 
 int u_accept (int socket, struct sockaddr *addr, socklen_t *addrlen)
 {
+    if (usocket_channel < 0)
+    {
+        if (u_socket_init() == -1)
+        {
+            return -RT_ERROR;
+        }
+    }
+
     if (addr)
     {
         // if (!lwp_user_accessable(addrlen, sizeof (socklen_t)))
@@ -409,6 +449,13 @@ int u_accept (int socket, struct sockaddr *addr, socklen_t *addrlen)
 
 ssize_t u_send (int socket, const void *dataptr, size_t size, int flags)
 {
+    if (usocket_channel < 0)
+    {
+        if (u_socket_init() == -1)
+        {
+            return -RT_ERROR;
+        }
+    }
     int res = -1;
     struct unet_cmd *cmd;
     int shmid = compose_cmd4(UNET_SRV_CMD_SENDTO, (void*)socket, (void*)size, (void*)flags, (void*)0, size, &cmd);
@@ -426,6 +473,13 @@ ssize_t u_send (int socket, const void *dataptr, size_t size, int flags)
 
 ssize_t u_recv (int socket, void *mem, size_t len, int flags)
 {
+    if (usocket_channel < 0)
+    {
+        if (u_socket_init() == -1)
+        {
+            return -RT_ERROR;
+        }
+    }
     int res = -RT_ERROR;
     struct unet_cmd *cmd;
     int shmid = compose_cmd4(UNET_SRV_CMD_RECVFROM, (void*)socket, (void*)len, (void*)flags, RT_NULL, len, &cmd);
@@ -443,6 +497,13 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
 
 ssize_t u_sendto (int socket, const void *dataptr, size_t size, int flags, const struct sockaddr *to, socklen_t tolen)
 {
+    if (usocket_channel < 0)
+    {
+        if (u_socket_init() == -1)
+        {
+            return -RT_ERROR;
+        }
+    }
     if (!size)
     {
         return -EINVAL;
@@ -489,6 +550,13 @@ ssize_t u_sendto (int socket, const void *dataptr, size_t size, int flags, const
 
 ssize_t u_recvfrom (int socket, void *mem, size_t len, int flags, struct sockaddr *from, socklen_t *fromlen)
 {
+    if (usocket_channel < 0)
+    {
+        if (u_socket_init() == -1)
+        {
+            return -RT_ERROR;
+        }
+    }
     if (!len)
     {
         return -EINVAL;
@@ -545,6 +613,13 @@ ssize_t u_recvfrom (int socket, void *mem, size_t len, int flags, struct sockadd
 
 int u_setsockopt (int socket, int level, int optname, const void *optval, socklen_t optlen)
 {
+    if (usocket_channel < 0)
+    {
+        if (u_socket_init() == -1)
+        {
+            return -RT_ERROR;
+        }
+    }
     int res = -RT_ERROR;
     struct unet_cmd *cmd;
     convert_sockopt(&level, &optname);

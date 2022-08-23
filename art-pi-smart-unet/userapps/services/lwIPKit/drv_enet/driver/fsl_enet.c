@@ -217,6 +217,16 @@ uint32_t ENET_GetInstance(ENET_Type *base)
     return instance;
 }
 
+#if defined (FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE) && FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE
+enet_intcoalesce_config_t intcoalesce_config = {
+    {100},
+    {10},
+    {100},
+    {10}
+};
+
+#endif
+
 void ENET_GetDefaultConfig(enet_config_t *config)
 {
     /* Checks input parameter. */
@@ -224,6 +234,10 @@ void ENET_GetDefaultConfig(enet_config_t *config)
 
     /* Initializes the MAC configure structure to zero. */
     memset(config, 0, sizeof(enet_config_t));
+
+    // #if defined (FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE) && FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE
+    // config->intCoalesceCfg = &intcoalesce_config;
+    // #endif
 
     /* Sets MII mode, full duplex, 100Mbps for MAC and PHY data interface. */
     config->miiMode = kENET_RmiiMode;
@@ -434,7 +448,7 @@ static void ENET_SetMacController(ENET_Type *base,
     {
         ENET_SetSMI(base, srcClock_Hz, !!(config->macSpecialConfig & kENET_ControlSMIPreambleDisable));
     }
-
+printf("**********%d\n", __LINE__);
 /* Enables Ethernet interrupt and NVIC. */
 #if defined(FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE) && FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE
     if (config->intCoalesceCfg)
@@ -443,7 +457,7 @@ static void ENET_SetMacController(ENET_Type *base,
 
         /* Clear all buffer interrupts. */
         base->EIMR &= ~intMask;
-
+        printf("**********%d\n", __LINE__);
         /* Set the interrupt coalescence. */
         base->TXIC = ENET_TXIC_ICFT(config->intCoalesceCfg->txCoalesceFrameCount[0]) |
                      config->intCoalesceCfg->txCoalesceTimeCount[0] | ENET_TXIC_ICCS_MASK | ENET_TXIC_ICEN_MASK;

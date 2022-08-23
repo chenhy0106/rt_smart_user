@@ -508,7 +508,7 @@ int iperf(int argc, char **argv)
                 }
             }
 
-            tid = rt_thread_create(tid_name, function, RT_NULL, 2048, 20, 100);
+            tid = rt_thread_create(tid_name, function, RT_NULL, 8192, 25, 80);
             if (tid) rt_thread_startup(tid);
         }
     }

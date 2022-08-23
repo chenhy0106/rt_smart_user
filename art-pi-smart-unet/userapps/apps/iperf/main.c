@@ -29,6 +29,8 @@
 #define IPERF_MODE_SERVER   1
 #define IPERF_MODE_CLIENT   2
 
+#define TCP_NODELAY 0x01
+
 typedef struct
 {
     int mode;
@@ -61,7 +63,7 @@ static void iperf_udp_client(void *thread_param)
     }
     server.sin_family = PF_INET;
     server.sin_port = htons(param.port);
-    server.sin_addr.s_addr = inet_addr(param.host);
+    server.sin_addr.s_addr = 0;// inet_addr(param.host);
     LOG_I("iperf udp mode run...");
     while (param.mode != IPERF_MODE_STOP)
     {
@@ -102,7 +104,7 @@ static void iperf_udp_server(void *thread_param)
     }
     server.sin_family = PF_INET;
     server.sin_port = htons(param.port);
-    server.sin_addr.s_addr = inet_addr("0.0.0.0");
+    server.sin_addr.s_addr = 0; //inet_addr("0.0.0.0");
 
     timeout.tv_sec = 2;
     timeout.tv_usec = 0;
@@ -187,13 +189,14 @@ static void iperf_client(void *thread_param)
         if (sock < 0)
         {
             LOG_E("create socket failed!");
-            rt_thread_delay(RT_TICK_PER_SECOND);
+            // rt_thread_delay(RT_TICK_PER_SECOND);
+            rt_thread_mdelay(1000);
             continue;
         }
 
         addr.sin_family = PF_INET;
         addr.sin_port = htons(param.port);
-        addr.sin_addr.s_addr = inet_addr((char *)param.host);
+        addr.sin_addr.s_addr = 0;// inet_addr((char *)param.host);
 
         ret = u_connect(sock, (const struct sockaddr *)&addr, sizeof(addr));
         if (ret == -1)
@@ -204,7 +207,8 @@ static void iperf_client(void *thread_param)
                 tips = 0;
             }
             closesocket(sock);
-            rt_thread_delay(RT_TICK_PER_SECOND);
+            // rt_thread_delay(RT_TICK_PER_SECOND);
+            rt_thread_mdelay(1000);
             continue;
         }
 
@@ -252,7 +256,8 @@ static void iperf_client(void *thread_param)
 
         closesocket(sock);
 
-        rt_thread_delay(RT_TICK_PER_SECOND * 2);
+        // rt_thread_delay(RT_TICK_PER_SECOND * 2);
+        rt_thread_mdelay(2000);
         LOG_W("Disconnected, iperf server shut down!");
         tips = 1;
     }
@@ -316,8 +321,9 @@ void iperf_server(void *thread_param)
 
         connected = u_accept(sock, (struct sockaddr *)&client_addr, &sin_size);
 
-        LOG_I("new client connected from (%s, %d)",
-                   inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        // LOG_I("new client connected from (%s, %d)",
+        //            inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        LOG_I("new client connected");
 
         {
             int flag = 1;
@@ -354,8 +360,9 @@ void iperf_server(void *thread_param)
                 recvlen = 0;
             }
         }
-        LOG_W("client disconnected (%s, %d)",
-                   inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        // LOG_W("client disconnected (%s, %d)",
+        //            inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+        LOG_W("client disconnected");
         if (connected >= 0) closesocket(connected);
         connected = -1;
     }
@@ -470,7 +477,7 @@ int main(int argc, char **argv)
 
         for (i = 0; i < numtid; i++)
         {
-            rt_thread_t tid = RT_NULL;
+            // rt_thread_t tid = RT_NULL;
             void (*function)(void *parameter);
 
             if (use_udp)
@@ -501,7 +508,11 @@ int main(int argc, char **argv)
             }
 
             tid = rt_thread_create(tid_name, function, RT_NULL, 2048, 20, 100);
-            if (tid) rt_thread_startup(tid);
+            if (tid) 
+            {
+                rt_thread_startup(tid);
+            }
+            // (*function)(RT_NULL);
         }
     }
     else

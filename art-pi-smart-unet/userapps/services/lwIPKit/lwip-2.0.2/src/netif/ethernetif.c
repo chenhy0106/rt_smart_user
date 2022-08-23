@@ -390,22 +390,32 @@ static int netdev_flags_sync(struct netif *lwip_netif)
 
 static err_t ethernetif_linkoutput(struct netif *netif, struct pbuf *p)
 {
-#ifndef LWIP_NO_TX_THREAD
-    struct eth_tx_msg msg;
-    struct eth_device* enetif;
+// #ifndef LWIP_NO_TX_THREAD
+//     struct eth_tx_msg msg;
+//     struct eth_device* enetif;
 
-    RT_ASSERT(netif != RT_NULL);
-    enetif = (struct eth_device*)netif->state;
+//     RT_ASSERT(netif != RT_NULL);
+//     enetif = (struct eth_device*)netif->state;
 
-    /* send a message to eth tx thread */
-    msg.netif = netif;
-    msg.buf   = p;
-    if (rt_mb_send(&eth_tx_thread_mb, (rt_ubase_t) &msg) == RT_EOK)
-    {
-        /* waiting for ack */
-        rt_sem_take(&(enetif->tx_ack), RT_WAITING_FOREVER);
-    }
-#else
+//     /* send a message to eth tx thread */
+//     msg.netif = netif;
+//     msg.buf   = p;
+//     if (rt_mb_send(&eth_tx_thread_mb, (rt_ubase_t) &msg) == RT_EOK)
+//     {
+//         /* waiting for ack */
+//         rt_sem_take(&(enetif->tx_ack), RT_WAITING_FOREVER);
+//     }
+// #else
+//     struct eth_device* enetif;
+
+//     RT_ASSERT(netif != RT_NULL);
+//     enetif = (struct eth_device*)netif->state;
+
+//     if (enetif->eth_tx(&(enetif->parent), p) != RT_EOK)
+//     {
+//         return ERR_IF;
+//     }
+// #endif
     struct eth_device* enetif;
 
     RT_ASSERT(netif != RT_NULL);
@@ -415,7 +425,6 @@ static err_t ethernetif_linkoutput(struct netif *netif, struct pbuf *p)
     {
         return ERR_IF;
     }
-#endif
     return ERR_OK;
 }
 
@@ -807,38 +816,38 @@ rt_err_t eth_device_linkchange(struct eth_device* dev, rt_bool_t up)
 extern int eth_init_done;
 #ifndef LWIP_NO_TX_THREAD
 /* Ethernet Tx Thread */
-static void eth_tx_thread_entry(void* parameter)
-{
-    while (!eth_init_done)
-    {
-        rt_thread_mdelay(10);
-    }
+// static void eth_tx_thread_entry(void* parameter)
+// {
+//     while (!eth_init_done)
+//     {
+//         rt_thread_mdelay(10);
+//     }
     
-    struct eth_tx_msg* msg;
-    while (1)
-    {
-        if (rt_mb_recv(&eth_tx_thread_mb, (rt_ubase_t *)&msg, RT_WAITING_FOREVER) == RT_EOK)
-        {
-            struct eth_device* enetif;
+//     struct eth_tx_msg* msg;
+//     while (1)
+//     {
+//         if (rt_mb_recv(&eth_tx_thread_mb, (rt_ubase_t *)&msg, RT_WAITING_FOREVER) == RT_EOK)
+//         {
+//             struct eth_device* enetif;
 
-            RT_ASSERT(msg->netif != RT_NULL);
-            RT_ASSERT(msg->buf   != RT_NULL);
+//             RT_ASSERT(msg->netif != RT_NULL);
+//             RT_ASSERT(msg->buf   != RT_NULL);
 
-            enetif = (struct eth_device*)msg->netif->state;
-            if (enetif != RT_NULL)
-            {
-                /* call driver's interface */
-                if (enetif->eth_tx(&(enetif->parent), msg->buf) != RT_EOK)
-                {
-                    /* transmit eth packet failed */
-                }
-            }
+//             enetif = (struct eth_device*)msg->netif->state;
+//             if (enetif != RT_NULL)
+//             {
+//                 /* call driver's interface */
+//                 if (enetif->eth_tx(&(enetif->parent), msg->buf) != RT_EOK)
+//                 {
+//                     /* transmit eth packet failed */
+//                 }
+//             }
 
-            /* send ACK */
-            rt_sem_release(&(enetif->tx_ack));
-        }
-    }
-}
+//             /* send ACK */
+//             rt_sem_release(&(enetif->tx_ack));
+//         }
+//     }
+// }
 #endif
 
 #ifndef LWIP_NO_RX_THREAD
@@ -848,6 +857,7 @@ extern void* ueth_rx_interrupt_detect(void);
 static void eth_rx_thread_entry(void* parameter)
 {
     struct eth_device* device;
+    struct pbuf *p;
 
     while (!eth_init_done)
     {
@@ -857,13 +867,11 @@ static void eth_rx_thread_entry(void* parameter)
     while (1)
     {
         device = (struct eth_device*)ueth_rx_interrupt_detect();
-        struct pbuf *p;
+        if(device->eth_rx == RT_NULL) break;
 
         /* receive all of buffer */
         while (1)
         {
-            if(device->eth_rx == RT_NULL) break;
-
             p = device->eth_rx(&(device->parent));
             if (p != RT_NULL)
             {
@@ -902,6 +910,7 @@ int eth_system_device_init_private(void)
     RT_ASSERT(result == RT_EOK);
 
     rt_thread_t erx_tid = rt_thread_create("erx", eth_rx_thread_entry, RT_NULL, RT_LWIP_ETHTHREAD_STACKSIZE, RT_ETHERNETIF_THREAD_PREORITY, 16);
+    // rt_thread_t erx_tid = rt_thread_create("erx", eth_rx_thread_entry, RT_NULL, RT_LWIP_ETHTHREAD_STACKSIZE, 30, 16);
     result = rt_thread_startup(erx_tid);
     RT_ASSERT(result == RT_EOK);
 
@@ -928,9 +937,9 @@ int eth_system_device_init_private(void)
     // result = rt_thread_startup(&eth_tx_thread);
     // RT_ASSERT(result == RT_EOK);
 
-    rt_thread_t etx_tid = rt_thread_create("etx", eth_tx_thread_entry, RT_NULL, RT_LWIP_ETHTHREAD_STACKSIZE, RT_ETHERNETIF_THREAD_PREORITY, 16);
-    result = rt_thread_startup(etx_tid);
-    RT_ASSERT(result == RT_EOK);
+    // rt_thread_t etx_tid = rt_thread_create("etx", eth_tx_thread_entry, RT_NULL, RT_LWIP_ETHTHREAD_STACKSIZE, RT_ETHERNETIF_THREAD_PREORITY, 16);
+    // result = rt_thread_startup(etx_tid);
+    // RT_ASSERT(result == RT_EOK);
 #endif
     return (int)result;
 }
