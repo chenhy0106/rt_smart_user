@@ -50,6 +50,16 @@
         "dfs_private.h": "c",
         "usocket.h": "c",
         "page.h": "c",
-        "ethernet.h": "c"
+        "ethernet.h": "c",
+        "*.tcc": "c",
+        "rope": "c",
+        "future": "c",
+        "limits": "c",
+        "ctime": "c",
+        "slist": "c",
+        "iomanip": "c",
+        "numeric": "c",
+        "shared_mutex": "c",
+        "streambuf": "c"
     }
 }

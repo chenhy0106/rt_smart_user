@@ -2,6 +2,8 @@
 #include <unet.h>
 #include <lwp_user_mm.h>
 
+#include <qua_printvar.h>
+
 /* The same socket option is defined differently in the user interfaces and the
  * implementation. The options should be converted in the kernel. */
 
@@ -486,11 +488,17 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
 
     if (cmd)
     {
+        extern rt_tick_t ipc_send, ipc_recv, memcpy_before, memcpy_after;
+        ipc_send = rt_tick_get();
         res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
+        ipc_recv = rt_tick_get();
+        
         if (res >= 0)
         {
             void *ptr = (void*)cmd + UNET_CMD_OFFSET;
+            memcpy_before = rt_tick_get();
             memcpy(mem, ptr, len);
+            memcpy_after = rt_tick_get();
         }
         if (len > STATIC_SHM_SIZE)
         {

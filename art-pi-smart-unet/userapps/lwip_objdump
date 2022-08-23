@@ -5562,7 +5562,6 @@ int stack_run(void)
   103b80:	eb001718 	bl	1097e8 <recvfrom_internal>
   103b84:	e50b0008 	str	r0, [fp, #-8]
                 }
-
                 lwp_shmdt(cmd);
   103b88:	e51b0010 	ldr	r0, [fp, #-16]
   103b8c:	ebfff8ec 	bl	101f44 <lwp_shmdt>

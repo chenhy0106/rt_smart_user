@@ -352,11 +352,9 @@ int stack_run(void)
                     psockaddr =  (void *)(size_t)cmd + UNET_CMD_OFFSET + size;
                     result = recvfrom_internal(socket, data, size, flags , psockaddr, fromlen);
                 }
-
                 lwp_shmdt(cmd);
                 unet_cmd_reply(stack_channel, (void *)(size_t)result);
                 break;
-
 
             // case UNET_SRV_CMD_GETSOCKOPT:
             //     socket = (int)(size_t)cmd->argv[0];

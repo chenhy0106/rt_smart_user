@@ -18,6 +18,8 @@
 #include <sys/select.h>
 #include <netdb.h>
 
+#include <qua_printvar.h>
+
 #define DBG_SECTION_NAME               "iperf"
 #define DBG_LEVEL                      DBG_INFO
 #include <rtdbg.h>
@@ -337,11 +339,16 @@ void iperf_server(void *thread_param)
 
         recvlen = 0;
         tick1 = rt_tick_get();
+
+        extern rt_tick_t before_recv, after_recv;
+
         while (param.mode != IPERF_MODE_STOP)
         {
-            // printf("*******%s %d, before u_recv: %d\n", __FILE__, __LINE__, rt_tick_get());
+            before_recv = rt_tick_get();
             bytes_received = u_recv(connected, recv_data, IPERF_BUFSZ, 0);
-            // printf("%d bytes\n", bytes_received);
+            after_recv = rt_tick_get();
+            qua_printvar();
+
             if (bytes_received <= 0) break;
 
             recvlen += bytes_received;
