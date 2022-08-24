@@ -241,8 +241,8 @@ static int recv_shmid = -1;
 static int usocket_channel = -1;
 const char * usocket_name = "lwIPKit";
 
-// #define STATIC_SHM_SIZE (2 * 4096 - UNET_CMD_OFFSET)
-#define STATIC_SHM_SIZE UNET_RECV_DATA_MAXLEN
+#define STATIC_SHM_SIZE (2 * 4096 - UNET_CMD_OFFSET)
+// #define STATIC_SHM_SIZE UNET_RECV_DATA_MAXLEN
 
 int u_socket_init()
 {

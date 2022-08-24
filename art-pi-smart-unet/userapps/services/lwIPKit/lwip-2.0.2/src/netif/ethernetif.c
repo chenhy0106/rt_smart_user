@@ -909,7 +909,7 @@ int eth_system_device_init_private(void)
                         RT_IPC_FLAG_FIFO);
     RT_ASSERT(result == RT_EOK);
 
-    rt_thread_t erx_tid = rt_thread_create("erx", eth_rx_thread_entry, RT_NULL, RT_LWIP_ETHTHREAD_STACKSIZE, RT_ETHERNETIF_THREAD_PREORITY, 16);
+    rt_thread_t erx_tid = rt_thread_create("erx", eth_rx_thread_entry, RT_NULL, RT_LWIP_ETHTHREAD_STACKSIZE, 25, 16);
     // rt_thread_t erx_tid = rt_thread_create("erx", eth_rx_thread_entry, RT_NULL, RT_LWIP_ETHTHREAD_STACKSIZE, 30, 16);
     result = rt_thread_startup(erx_tid);
     RT_ASSERT(result == RT_EOK);

@@ -219,10 +219,10 @@ uint32_t ENET_GetInstance(ENET_Type *base)
 
 #if defined (FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE) && FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE
 enet_intcoalesce_config_t intcoalesce_config = {
-    {100},
-    {10},
-    {100},
-    {10}
+    {30},
+    {30},
+    {30},
+    {30}
 };
 
 #endif
@@ -235,9 +235,9 @@ void ENET_GetDefaultConfig(enet_config_t *config)
     /* Initializes the MAC configure structure to zero. */
     memset(config, 0, sizeof(enet_config_t));
 
-    // #if defined (FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE) && FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE
-    // config->intCoalesceCfg = &intcoalesce_config;
-    // #endif
+    #if defined (FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE) && FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE
+    config->intCoalesceCfg = &intcoalesce_config;
+    #endif
 
     /* Sets MII mode, full duplex, 100Mbps for MAC and PHY data interface. */
     config->miiMode = kENET_RmiiMode;

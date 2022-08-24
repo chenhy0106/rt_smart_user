@@ -606,7 +606,7 @@ void* ueth_rx_interrupt_detect(void) {
 #ifdef POLL_INT
     while (1)
     {
-        rt_thread_mdelay(1);
+        // rt_thread_mdelay(1);
         if ((base->EIR & ENET_RX_INTERRUPT) && (base->EIMR & ENET_RX_INTERRUPT))
         {
             ENET_DisableInterrupts(base, ENET_RX_INTERRUPT);
