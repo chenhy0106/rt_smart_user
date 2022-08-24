@@ -243,8 +243,8 @@ static int recv_shmid = -1;
 static int usocket_channel = -1;
 const char * usocket_name = "lwIPKit";
 
-// #define STATIC_SHM_SIZE (2 * 4096 - UNET_CMD_OFFSET)
-#define STATIC_SHM_SIZE UNET_RECV_DATA_MAXLEN
+#define STATIC_SHM_SIZE (2 * 4096 - UNET_CMD_OFFSET)
+// #define STATIC_SHM_SIZE UNET_RECV_DATA_MAXLEN
 
 int u_socket_init()
 {
@@ -488,17 +488,19 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
 
     if (cmd)
     {
-        extern rt_tick_t ipc_send, ipc_recv, memcpy_before, memcpy_after;
-        ipc_send = rt_tick_get();
+        extern void set_current_id(int id);
+        set_current_id(shmid);
+        extern uint64_t ipc_send, ipc_recv, memcpy_before, memcpy_after;
+        ipc_send = get_hdr_counter();
         res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
-        ipc_recv = rt_tick_get();
+        ipc_recv = get_hdr_counter();
         
         if (res >= 0)
         {
             void *ptr = (void*)cmd + UNET_CMD_OFFSET;
-            memcpy_before = rt_tick_get();
+            memcpy_before = get_hdr_counter();
             memcpy(mem, ptr, len);
-            memcpy_after = rt_tick_get();
+            memcpy_after = get_hdr_counter();
         }
         if (len > STATIC_SHM_SIZE)
         {

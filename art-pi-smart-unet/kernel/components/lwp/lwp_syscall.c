@@ -2394,15 +2394,28 @@ rt_err_t sys_channel_send_recv_timeout(int fd, rt_channel_msg_t data, rt_channel
 {
     return lwp_channel_send_recv_timeout(FDT_TYPE_LWP, fd, data, data_ret, time);
 }
-
+extern uint64_t user_reply;
+extern uint64_t user_recv;
+extern uint64_t get_hdr_counter();
+extern int get_current_id();
 rt_err_t sys_channel_reply(int fd, rt_channel_msg_t data)
 {
+    if (data->u.b.buf == (void*)get_current_id())
+    {
+        user_reply = get_hdr_counter();
+    }
     return lwp_channel_reply(FDT_TYPE_LWP, fd, data);
 }
 
 rt_err_t sys_channel_recv_timeout(int fd, rt_channel_msg_t data, rt_int32_t time)
 {
-    return lwp_channel_recv_timeout(FDT_TYPE_LWP, fd, data, time);
+    rt_err_t res = lwp_channel_recv_timeout(FDT_TYPE_LWP, fd, data, time);
+    if (data->u.d == (void*)get_current_id())
+    {
+        user_recv = get_hdr_counter();
+    }
+    
+    return res;
 }
 
 /*****/

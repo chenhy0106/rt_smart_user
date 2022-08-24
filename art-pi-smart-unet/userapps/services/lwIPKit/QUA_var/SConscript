@@ -1,0 +1,9 @@
+from building import *
+
+cwd     = GetCurrentDir()
+path    = [cwd]
+src     = ['qua_printvar.c']
+
+group = DefineGroup('QUA', src, depend = [], CPPPATH = path)
+
+Return('group')

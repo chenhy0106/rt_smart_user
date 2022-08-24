@@ -23,6 +23,6 @@ if GetDepend(['RT_USING_LWIP202']):
     if os.path.isfile(os.path.join(path, 'SConscript')):
         group = group + SConscript(os.path.join(lwipdir, 'SConscript'))
 
-group = group + SConscript(os.path.join("drv_enet", 'SConscript'))
+group = group + SConscript(os.path.join("drv_enet", 'SConscript')) + SConscript(os.path.join("QUA_var", 'SConscript'))
 
 Return('group')

@@ -340,13 +340,13 @@ void iperf_server(void *thread_param)
         recvlen = 0;
         tick1 = rt_tick_get();
 
-        extern rt_tick_t before_recv, after_recv;
+        extern uint64_t before_recv, after_recv;
 
         while (param.mode != IPERF_MODE_STOP)
         {
-            before_recv = rt_tick_get();
+            before_recv = get_hdr_counter();
             bytes_received = u_recv(connected, recv_data, IPERF_BUFSZ, 0);
-            after_recv = rt_tick_get();
+            after_recv = get_hdr_counter();
             qua_printvar();
 
             if (bytes_received <= 0) break;

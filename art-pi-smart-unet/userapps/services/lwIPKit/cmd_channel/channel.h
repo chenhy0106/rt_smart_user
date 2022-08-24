@@ -56,6 +56,18 @@ rt_inline void channel_cmd_reply(int channel, void *cmd)
     rt_channel_reply(channel, &chn_msg);
 }
 
+rt_inline void channel_cmd_reply_id(int channel, void *cmd, void *shmid)
+{
+    RT_ASSERT(channel >= 0);
+
+    struct rt_channel_msg chn_msg;
+    chn_msg.type = RT_CHANNEL_RAW;
+    chn_msg.u.d = cmd;
+    chn_msg.u.b.buf = shmid;
+
+    rt_channel_reply(channel, &chn_msg);
+}
+
 #define CHANNEL_CMD_MAX_ARGS   6   /* maximum number of arguments in channel */
 struct channel_cmd
 {
