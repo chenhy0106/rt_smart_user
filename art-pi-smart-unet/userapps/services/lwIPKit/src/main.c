@@ -257,7 +257,7 @@ int stack_run(void)
                 protocol = (int)(size_t)cmd->argv[2];
                 socket = socket_internal(domain, type, protocol);
                 lwp_shmdt(cmd);
-                unet_cmd_reply(stack_channel, (void *)(size_t)socket);
+                channel_cmd_reply(stack_channel, (void *)(size_t)socket);
                 break;
 
             // case UNET_SRV_CMD_CLOSE:
@@ -268,7 +268,7 @@ int stack_run(void)
             //     result = lwip_close(socket);
 
             //     lwp_shmdt(cmd);
-            //     unet_cmd_reply(stack_channel, (void *)(size_t)result);
+            //     channel_cmd_reply(stack_channel, (void *)(size_t)result);
             //     break;
 
             case UNET_SRV_CMD_BIND:
@@ -280,7 +280,7 @@ int stack_run(void)
                 printf("****%s %d %d\n", __FILE__, __LINE__, result);
 
                 lwp_shmdt(cmd);
-                unet_cmd_reply(stack_channel, (void *)(size_t)result);
+                channel_cmd_reply(stack_channel, (void *)(size_t)result);
                 break;
 
             case UNET_SRV_CMD_LISTEN:
@@ -289,7 +289,7 @@ int stack_run(void)
                 result = listen_internal(socket, (int)(size_t)cmd->argv[1]);
 
                 lwp_shmdt(cmd);
-                unet_cmd_reply(stack_channel, (void *)(size_t)result);
+                channel_cmd_reply(stack_channel, (void *)(size_t)result);
                 break;
 
             case UNET_SRV_CMD_CONNECT:
@@ -300,7 +300,7 @@ int stack_run(void)
                 result = connect_internal(socket, psockaddr, len);
 
                 lwp_shmdt(cmd);
-                unet_cmd_reply(stack_channel, (void *)(size_t)result);
+                channel_cmd_reply(stack_channel, (void *)(size_t)result);
                 break;
 
             case UNET_SRV_CMD_ACCEPT:
@@ -308,7 +308,7 @@ int stack_run(void)
                 psockaddr = (void *)(size_t)cmd + UNET_CMD_OFFSET;
                 result = accept_internal(socket, psockaddr, (socklen_t *)&cmd->argv[1]);
                 lwp_shmdt(cmd);
-                unet_cmd_reply(stack_channel, (void *)(size_t)result);
+                channel_cmd_reply(stack_channel, (void *)(size_t)result);
                 break;
 
             case UNET_SRV_CMD_SENDTO:
@@ -333,7 +333,7 @@ int stack_run(void)
                     rt_kprintf("%s line %d sendto error\n",__func__,__LINE__);
                 }
                 lwp_shmdt(cmd);
-                unet_cmd_reply(stack_channel, (void *)(size_t)result);
+                channel_cmd_reply(stack_channel, (void *)(size_t)result);
                 break;
 
             case UNET_SRV_CMD_RECVFROM:
@@ -354,7 +354,7 @@ int stack_run(void)
                 }
 
                 lwp_shmdt(cmd);
-                unet_cmd_reply(stack_channel, (void *)(size_t)result);
+                channel_cmd_reply(stack_channel, (void *)(size_t)result);
                 break;
 
 
@@ -369,7 +369,7 @@ int stack_run(void)
             //     RT_ASSERT(*psocklen < UNET_RECV_DATA_MAXLEN);
 
             //     lwp_shmdt(cmd);
-            //     unet_cmd_reply(stack_channel, (void *)(size_t)result);
+            //     channel_cmd_reply(stack_channel, (void *)(size_t)result);
             //     break;
 
             case UNET_SRV_CMD_SETSOCKOPT:
@@ -383,7 +383,7 @@ int stack_run(void)
                 result = setsockopt_internal(socket, level, opt, optval, socklen);
 
                 lwp_shmdt(cmd);
-                unet_cmd_reply(stack_channel, (void *)(size_t)result);
+                channel_cmd_reply(stack_channel, (void *)(size_t)result);
                 break;
             }
 
@@ -393,7 +393,7 @@ int stack_run(void)
             //     result = lwip_shutdown(socket, (int)(size_t)cmd->argv[1]);
 
             //     lwp_shmdt(cmd);
-            //     unet_cmd_reply(stack_channel, (void *)(size_t)result);
+            //     channel_cmd_reply(stack_channel, (void *)(size_t)result);
             //     break;
 
             // case UNET_SRV_CMD_GETPEERNAME:
@@ -405,7 +405,7 @@ int stack_run(void)
             //     RT_ASSERT(*psocklen < UNET_RECV_DATA_MAXLEN);
 
             //     lwp_shmdt(cmd);
-            //     unet_cmd_reply(stack_channel, (void *)(size_t)result);
+            //     channel_cmd_reply(stack_channel, (void *)(size_t)result);
             //     break;
 
             // case UNET_SRV_CMD_GETSOCKNAME:
@@ -417,7 +417,7 @@ int stack_run(void)
             //     RT_ASSERT(*psocklen < UNET_RECV_DATA_MAXLEN);
 
             //     lwp_shmdt(cmd);
-            //     unet_cmd_reply(stack_channel, (void *)(size_t)result);
+            //     channel_cmd_reply(stack_channel, (void *)(size_t)result);
             //     break;
 
             // case UNET_SRV_CMD_FCNTL:
@@ -425,7 +425,7 @@ int stack_run(void)
             //     result = lwip_fcntl(socket, (int)(size_t)cmd->argv[1], (int)(size_t)cmd->argv[2]);
 
             //     lwp_shmdt(cmd);
-            //     unet_cmd_reply(stack_channel, (void *)(size_t)result);
+            //     channel_cmd_reply(stack_channel, (void *)(size_t)result);
             //     break;
 
     //         case UNET_SRV_CMD_IOCTL:
@@ -433,7 +433,7 @@ int stack_run(void)
     //             result = lwip_ioctl(socket, (int)(size_t)cmd->argv[1], (int *)&cmd->argv[2]);
 
     //             lwp_shmdt(cmd);
-    //             unet_cmd_reply(stack_channel, (void *)(size_t)result);
+    //             channel_cmd_reply(stack_channel, (void *)(size_t)result);
     //             break;
 
     //         case UNET_SRV_CMD_GETHOSTBYNAME:
@@ -443,7 +443,7 @@ int stack_run(void)
     //                 *((ip_addr_t *) &cmd->argv[0]) = *((ip_addr_t *) phostent->h_addr);
 
     //             lwp_shmdt(cmd);
-    //             unet_cmd_reply(stack_channel, phostent);
+    //             channel_cmd_reply(stack_channel, phostent);
     //             break;
 
     //         case UNET_SRV_CMD_GETADDRINFO:
@@ -472,7 +472,7 @@ int stack_run(void)
     //                 result = -1;
     //             }
     //             lwp_shmdt(cmd);
-    //             unet_cmd_reply(stack_channel, (void *)(size_t)result);
+    //             channel_cmd_reply(stack_channel, (void *)(size_t)result);
     //             break;
 
     //         case UNET_SRV_CMD_FREEADDRINFO:
@@ -480,7 +480,7 @@ int stack_run(void)
     //             lwip_freeaddrinfo(u_ai);
 
     //             lwp_shmdt(cmd);
-    //             unet_cmd_reply(stack_channel, u_ai);
+    //             channel_cmd_reply(stack_channel, u_ai);
     //             break;
 
     //         case UNET_SRV_CMD_POLL:
@@ -512,7 +512,7 @@ int stack_run(void)
     //             /* Note, the actual socket is 'maxfd - 1'. */
     //             cmd->argv[0] = get_socket(socket);
     //             lwp_shmdt(cmd);
-    //             unet_cmd_reply(stack_channel, (void *)(size_t)mask);
+    //             channel_cmd_reply(stack_channel, (void *)(size_t)mask);
     //             break;
 
             default :
