@@ -448,7 +448,6 @@ static void ENET_SetMacController(ENET_Type *base,
     {
         ENET_SetSMI(base, srcClock_Hz, !!(config->macSpecialConfig & kENET_ControlSMIPreambleDisable));
     }
-printf("**********%d\n", __LINE__);
 /* Enables Ethernet interrupt and NVIC. */
 #if defined(FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE) && FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE
     if (config->intCoalesceCfg)
@@ -457,7 +456,6 @@ printf("**********%d\n", __LINE__);
 
         /* Clear all buffer interrupts. */
         base->EIMR &= ~intMask;
-        printf("**********%d\n", __LINE__);
         /* Set the interrupt coalescence. */
         base->TXIC = ENET_TXIC_ICFT(config->intCoalesceCfg->txCoalesceFrameCount[0]) |
                      config->intCoalesceCfg->txCoalesceTimeCount[0] | ENET_TXIC_ICCS_MASK | ENET_TXIC_ICEN_MASK;

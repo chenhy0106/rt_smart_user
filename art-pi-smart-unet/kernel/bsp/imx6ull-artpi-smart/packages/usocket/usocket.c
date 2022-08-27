@@ -248,7 +248,7 @@ int u_socket_init()
 {
     recv_shmid = compose_cmd0(UNET_SRV_CMD_RECVFROM, STATIC_SHM_SIZE);
 
-    usocket_channel  = rt_channel_open(usocket_name, O_CREAT);
+    usocket_channel  = rt_channel_open(usocket_name, O_RDWR);
     if (usocket_channel < 0) 
     {
         usocket_channel = -1;
@@ -266,8 +266,8 @@ int u_socket (int domain, int type, int protocol)
 {
     if (usocket_channel < 0)
     {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        u_socket_init();
+        
     }
 
     int fd = -1;
@@ -310,8 +310,8 @@ int u_bind (int socket, const struct sockaddr *name, socklen_t namelen)
 {
     if (usocket_channel < 0)
     {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        u_socket_init();
+        
     }
     // if (!lwp_user_accessable((void *)name, namelen))
     // {
@@ -329,15 +329,12 @@ int u_bind (int socket, const struct sockaddr *name, socklen_t namelen)
     struct unet_cmd *cmd = (struct unet_cmd *)lwp_shminfo(shmid);
     if (cmd)
     {
-        printf("****%s %d\n", __FILE__, __LINE__);
         void *ptr = (void*)cmd + UNET_CMD_OFFSET;
         memcpy(ptr, name, namelen);
         res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
         lwp_shmdt(cmd);
-        printf("****%s %d %d\n", __FILE__, __LINE__, res);
     }
 
-    printf("****%s %d %d\n", __FILE__, __LINE__, res);
     lwp_shmrm(shmid);
     return res;
 }
@@ -346,8 +343,8 @@ int u_connect (int socket, const struct sockaddr *name, socklen_t namelen)
 {
     if (usocket_channel < 0)
     {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        u_socket_init();
+        
     }
     // if (!lwp_user_accessable((void *)name, namelen))
     // {
@@ -380,8 +377,8 @@ int u_listen (int socket, int backlog)
 {
     if (usocket_channel < 0)
     {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        u_socket_init();
+        
     }
 
     int res = -1;
@@ -401,8 +398,8 @@ int u_accept (int socket, struct sockaddr *addr, socklen_t *addrlen)
 {
     if (usocket_channel < 0)
     {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        u_socket_init();
+        
     }
 
     // if (addr)
@@ -445,8 +442,8 @@ ssize_t u_send (int socket, const void *dataptr, size_t size, int flags)
 {
     if (usocket_channel < 0)
     {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        u_socket_init();
+        
     }
 
     int res = -1;
@@ -468,8 +465,8 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
 {
     if (usocket_channel < 0)
     {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        u_socket_init();
+        
     }
 
     int shmid = recv_shmid;
@@ -509,8 +506,8 @@ ssize_t u_sendto (int socket, const void *dataptr, size_t size, int flags, const
 {
     if (usocket_channel < 0)
     {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        u_socket_init();
+        
     }
     
     if (!size)
@@ -561,8 +558,8 @@ ssize_t u_recvfrom (int socket, void *mem, size_t len, int flags, struct sockadd
 {
     if (usocket_channel < 0)
     {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        u_socket_init();
+        
     }
     
     if (!len)
@@ -625,8 +622,8 @@ int u_setsockopt (int socket, int level, int optname, const void *optval, sockle
 {
     if (usocket_channel < 0)
     {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        u_socket_init();
+        
     }
     
     int res = -RT_ERROR;;

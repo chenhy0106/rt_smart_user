@@ -639,7 +639,6 @@ int sal_bind(int socket, const struct sockaddr *name, socklen_t namelen)
         new_netdev = netdev_get_by_ipaddr(&input_ipaddr);
         if (new_netdev == RT_NULL)
         {
-            printf("****%s %d\n", __FILE__, __LINE__);
             return -1;
         }
 
@@ -658,7 +657,6 @@ int sal_bind(int socket, const struct sockaddr *name, socklen_t namelen)
             new_socket = input_pf->skt_ops->socket(input_pf->family, sock->type, sock->protocol);
             if (new_socket < 0)
             {
-                printf("****%s %d\n", __FILE__, __LINE__);
                 return -1;
             }
             sock->netdev = new_netdev;

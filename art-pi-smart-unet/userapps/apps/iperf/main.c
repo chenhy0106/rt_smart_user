@@ -16,7 +16,7 @@
 // #include <sys/socket.h>
 #include <usocket.h>
 #include <sys/select.h>
-#include <netdb.h>
+// #include <netdb.h>
 
 #define DBG_SECTION_NAME               "iperf"
 #define DBG_LEVEL                      DBG_INFO
@@ -272,8 +272,8 @@ void iperf_server(void *thread_param)
     int sock = -1, connected, bytes_received;
     rt_uint64_t recvlen;
     struct sockaddr_in server_addr, client_addr;
-    fd_set readset;
-    struct timeval timeout;
+    // fd_set readset;
+    // struct timeval timeout;
 
     recv_data = (uint8_t *)rt_malloc(IPERF_BUFSZ);
     if (recv_data == RT_NULL)
@@ -306,24 +306,24 @@ void iperf_server(void *thread_param)
         goto __exit;
     }
 
-    timeout.tv_sec = 3;
-    timeout.tv_usec = 0;
 
+    // timeout.tv_sec = 3;
+    // timeout.tv_usec = 0;
     while (param.mode != IPERF_MODE_STOP)
     {
-        FD_ZERO(&readset);
-        FD_SET(sock, &readset);
-
-        if (select(sock + 1, &readset, RT_NULL, RT_NULL, &timeout) == 0)
-            continue;
-
+        // FD_ZERO(&readset);
+        // FD_SET(sock, &readset);
+        // printf("******%s %d\n", __FILE__, __LINE__);
+        // if (select(sock + 1, &readset, RT_NULL, RT_NULL, &timeout) == 0)
+        //     continue;
+        // printf("******%s %d\n", __FILE__, __LINE__);
         sin_size = sizeof(struct sockaddr_in);
 
         connected = u_accept(sock, (struct sockaddr *)&client_addr, &sin_size);
 
         // LOG_I("new client connected from (%s, %d)",
         //            inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
-        LOG_I("new client connected");
+        LOG_I("new client connected %d %d\n", client_addr.sin_addr.s_addr, client_addr.sin_port);
 
         {
             int flag = 1;
@@ -339,7 +339,9 @@ void iperf_server(void *thread_param)
         tick1 = rt_tick_get();
         while (param.mode != IPERF_MODE_STOP)
         {
+            // printf("******%s %d\n", __FILE__, __LINE__);
             bytes_received = u_recv(connected, recv_data, IPERF_BUFSZ, 0);
+            // printf("******%s %d\n", __FILE__, __LINE__);
             if (bytes_received <= 0) break;
 
             recvlen += bytes_received;
@@ -349,13 +351,13 @@ void iperf_server(void *thread_param)
             {
                 long data;
                 int integer, decimal;
-                rt_thread_t tid;
+                // rt_thread_t tid;
 
-                tid = rt_thread_self();
+                // tid = rt_thread_self();
                 data = recvlen * RT_TICK_PER_SECOND / 125 / (tick2 - tick1);
                 integer = data/1000;
                 decimal = data%1000;
-                LOG_I("%s: %d.%03d0 Mbps!", tid->name, integer, decimal);
+                LOG_I("%d.%03d0 Mbps!", integer, decimal);
                 tick1 = tick2;
                 recvlen = 0;
             }
@@ -507,12 +509,12 @@ int main(int argc, char **argv)
                 }
             }
 
-            tid = rt_thread_create(tid_name, function, RT_NULL, 2048, 20, 100);
-            if (tid) 
-            {
-                rt_thread_startup(tid);
-            }
-            // (*function)(RT_NULL);
+            // tid = rt_thread_create(tid_name, function, RT_NULL, 4096, 25, 80);
+            // if (tid) 
+            // {
+            //     rt_thread_startup(tid);
+            // }
+            (*function)(RT_NULL);
         }
     }
     else

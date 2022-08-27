@@ -55,7 +55,7 @@ const char *data_name = "dataInd";
 int stack_init(void)
 {
     /* stack channel as a flag whether the stack has been initialized */
-    stack_channel = rt_channel_open(chn_name, O_RDWR);
+    stack_channel = rt_channel_open(chn_name, O_CREAT);
     if (stack_channel < 0) return 1;    /* initialization has been done */
 
     // /* If data_channel already exists, something must be wrong, fix it */
@@ -277,7 +277,6 @@ int stack_run(void)
                 len = (int)(size_t)cmd->argv[1];
 
                 result = bind_internal(socket, psockaddr, len);
-                printf("****%s %d %d\n", __FILE__, __LINE__, result);
 
                 lwp_shmdt(cmd);
                 channel_cmd_reply(stack_channel, (void *)(size_t)result);

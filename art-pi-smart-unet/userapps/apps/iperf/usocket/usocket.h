@@ -1,7 +1,7 @@
 #ifndef USOCKET_H_
 #define USOCKET_H_
 
-#include <sys/socket.h>
+#include "sal_socket.h"
 
 #ifdef __cplusplus
 extern "C" {

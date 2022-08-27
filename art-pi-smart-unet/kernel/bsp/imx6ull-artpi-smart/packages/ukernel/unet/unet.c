@@ -20,7 +20,7 @@ rt_uint8_t k_ai_addr[K_AI_ADDR_OFFSET];
  * For each command to transfer, we allocate a shared memory region and put in
  * the command structure and the possible extra data following it.
  */
-static size_t key = 0;
+static size_t key = 1;
 int compose_cmd(uint32_t cmd, void *arg0, void *arg1, void *arg2,
         void *arg3, void *arg4, void *arg5, size_t datalen)
 {
@@ -37,8 +37,9 @@ int compose_cmd(uint32_t cmd, void *arg0, void *arg1, void *arg2,
      * But we need to send commands to 2 channels, here is a simple way to avoid
      * ID conflicts.
      */
+    // size_t key = (size_t) rt_thread_self();
     key = key + 2;
-
+    
     shmid = lwp_shmget(key, len, 1);    /* create a new shared-memory */
     if (shmid == -1)
     {

@@ -236,10 +236,10 @@ rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
         LOG_E("ERROR: rx bd page alloc failed");
         return RT_ERROR;
     }
-    buffConfig->rxBdStartAddrAlign = ueth_remap(ueth_v2p(rx_bd_addr), UETH_REMAP_NOCACHE, rx_bd_memsize);
+    buffConfig->rxPhyBdStartAddrAlign = ueth_v2p(rx_bd_addr);
+    buffConfig->rxBdStartAddrAlign = ueth_remap(buffConfig->rxPhyBdStartAddrAlign, UETH_REMAP_NOCACHE, rx_bd_memsize);
     // buffConfig->rxBdStartAddrAlign = (void *)rt_ioremap_nocache(virtual_to_physical(rx_bd_addr), (SYS_PAGE_SIZE<<RX_BD_INDEX_NUM));
     // buffConfig->rxBdStartAddrAlign = rx_bd_addr;
-    buffConfig->rxPhyBdStartAddrAlign = ueth_v2p(rx_bd_addr);
    
     // tx_bd_addr = (void*)rt_pages_alloc(TX_BD_INDEX_NUM);
     tx_bd_addr = mem_align;
@@ -249,9 +249,9 @@ rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
         return RT_ERROR;
     }
     // buffConfig->txBdStartAddrAlign = (void *)rt_ioremap_nocache(virtual_to_physical(tx_bd_addr), (SYS_PAGE_SIZE<<TX_BD_INDEX_NUM));
-    buffConfig->txBdStartAddrAlign = ueth_remap(ueth_v2p(tx_bd_addr), UETH_REMAP_NOCACHE, tx_bd_memsize);
-    // buffConfig->txBdStartAddrAlign = tx_bd_addr;
     buffConfig->txPhyBdStartAddrAlign = ueth_v2p(tx_bd_addr);
+    buffConfig->txBdStartAddrAlign = ueth_remap(buffConfig->txPhyBdStartAddrAlign, UETH_REMAP_NOCACHE, tx_bd_memsize);
+    // buffConfig->txBdStartAddrAlign = tx_bd_addr;
     
     return RT_EOK;
 }

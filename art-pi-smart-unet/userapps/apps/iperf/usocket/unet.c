@@ -18,6 +18,7 @@ int compose_cmd(uint32_t cmd, void *arg0, void *arg1, void *arg2,
      * ID conflicts.
      */
     key = key + 2;
+    // size_t key = (size_t) rt_thread_self();
 
     shmid = lwp_shmget(key, len, 1);    /* create a new shared-memory */
     if (shmid == -1)

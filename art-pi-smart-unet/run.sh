@@ -17,5 +17,6 @@ then
 cd ${dir}/kernel/bsp/imx6ull-artpi-smart
 echo "enter ${dir}/kernel/bsp/imx6ull-artpi-smart"
 scons -j10
+../../../tools/gnu_gcc/arm-linux-musleabi_for_x86_64-pc-linux-gnu/arm-linux-musleabi/bin/objdump -S -d rtthread.elf > rtthread
 fi
     

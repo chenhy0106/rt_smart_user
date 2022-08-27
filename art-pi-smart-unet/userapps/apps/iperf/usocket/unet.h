@@ -78,6 +78,8 @@ struct unet_cmd
  * 'UNET_CMD_OFFSET'. */
 #define UNET_CMD_OFFSET    sizeof(struct unet_cmd)
 
+#define UNET_RECV_DATA_MAXLEN    (4096-UNET_CMD_OFFSET)
+
 /* In microkernel, shared-memory is used to transfer received data in pages. For
  * now, we limite the total size of command and data to one page. */
 

@@ -1,3 +1,4 @@
+#include <rtthread.h>
 #include "usocket.h"
 #include "unet.h"
 // #include <lwp_user_mm.h>
@@ -237,12 +238,20 @@ static void convert_sockopt(int *level, int *optname)
 
 }
 
-
+static int recv_shmid = -1;
+static struct unet_cmd *recv_cmd = RT_NULL;
+static int static_len = 0;
 static int usocket_channel = -1;
 const char * usocket_name = "lwIPKit";
 
+#define STATIC_SHM_SIZE (2 * 4096 - UNET_CMD_OFFSET)
+// #define STATIC_SHM_SIZE UNET_RECV_DATA_MAXLEN
+
 int u_socket_init()
 {
+    static_len = STATIC_SHM_SIZE;
+    recv_shmid = compose_cmd0(UNET_SRV_CMD_RECVFROM, static_len, &recv_cmd);
+
     usocket_channel  = rt_channel_open(usocket_name, O_CREAT);
     if (usocket_channel < 0) 
     {
@@ -260,16 +269,7 @@ int u_socket (int domain, int type, int protocol)
 {
     if (usocket_channel < 0)
     {
-        if (u_socket_init() == -1)
-        {
-            return -RT_ERROR;
-        }
-    }
-    
-    if (usocket_channel < 0)
-    {
-        rt_kprintf("u_socket channel invalid\n");
-        return -RT_ERROR;
+        if (u_socket_init() == -1) return -RT_ERROR;
     }
 
     int fd = -1;
@@ -292,6 +292,7 @@ int u_socket (int domain, int type, int protocol)
     {
         fd = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
         lwp_shmdt(cmd);
+        lwp_shmrm(shmid);
     }
 
     if (fd < 0)
@@ -311,12 +312,8 @@ int u_bind (int socket, const struct sockaddr *name, socklen_t namelen)
 {
     if (usocket_channel < 0)
     {
-        if (u_socket_init() == -1)
-        {
-            return -RT_ERROR;
-        }
+        if (u_socket_init() == -1) return -RT_ERROR;
     }
-
     // if (!lwp_user_accessable((void *)name, namelen))
     // {
     //     return -EFAULT;
@@ -330,15 +327,16 @@ int u_bind (int socket, const struct sockaddr *name, socklen_t namelen)
     // return bind(socket, &sa, namelen);
     int res = -1;
     struct unet_cmd *cmd;
-    int shmid = compose_cmd2(UNET_SRV_CMD_BIND, (void*)socket, (void*)namelen, sizeof(struct sockaddr), &cmd);
+    int shmid = compose_cmd2(UNET_SRV_CMD_BIND, (void*)socket, (void*)namelen, namelen, &cmd);
     if (cmd)
     {
         void *ptr = (void*)cmd + UNET_CMD_OFFSET;
-        memcpy(ptr, name, sizeof(struct sockaddr));
+        memcpy(ptr, name, namelen);
         res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
         lwp_shmdt(cmd);
     }
 
+    lwp_shmrm(shmid);
     return res;
 }
 
@@ -346,12 +344,8 @@ int u_connect (int socket, const struct sockaddr *name, socklen_t namelen)
 {
     if (usocket_channel < 0)
     {
-        if (u_socket_init() == -1)
-        {
-            return -RT_ERROR;
-        }
+        if (u_socket_init() == -1) return -RT_ERROR;
     }
-
     // if (!lwp_user_accessable((void *)name, namelen))
     // {
     //     return -EFAULT;
@@ -367,26 +361,23 @@ int u_connect (int socket, const struct sockaddr *name, socklen_t namelen)
     // return bind(socket, &sa, namelen);
     int res = -1;
     struct unet_cmd *cmd;
-    int shmid = compose_cmd2(UNET_SRV_CMD_CONNECT, (void*)socket, (void*)namelen, sizeof(struct sockaddr), &cmd);
+    int shmid = compose_cmd2(UNET_SRV_CMD_CONNECT, (void*)socket, (void*)namelen, namelen, &cmd);
     if (cmd)
     {
         void *ptr = (void*)cmd + UNET_CMD_OFFSET;
-        memcpy(ptr, name, sizeof(struct sockaddr));
+        memcpy(ptr, name, namelen);
         res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
         lwp_shmdt(cmd);
-        return res;
     }
 
+    lwp_shmrm(shmid);
     return res;
 }
 int u_listen (int socket, int backlog)
 {
     if (usocket_channel < 0)
     {
-        if (u_socket_init() == -1)
-        {
-            return -RT_ERROR;
-        }
+        if (u_socket_init() == -1) return -RT_ERROR;
     }
 
     int res = -1;
@@ -398,6 +389,7 @@ int u_listen (int socket, int backlog)
         lwp_shmdt(cmd);
     }
 
+    lwp_shmrm(shmid);
     return res;
 }
 
@@ -405,45 +397,29 @@ int u_accept (int socket, struct sockaddr *addr, socklen_t *addrlen)
 {
     if (usocket_channel < 0)
     {
-        if (u_socket_init() == -1)
-        {
-            return -RT_ERROR;
-        }
-    }
-
-    if (addr)
-    {
-        // if (!lwp_user_accessable(addrlen, sizeof (socklen_t)))
-        // {
-        //     return -EFAULT;
-        // }
-
-        // if (!lwp_user_accessable(addr, *addrlen))
-        // {
-        //     return -EFAULT;
-        // }
+        if (u_socket_init() == -1) return -RT_ERROR;
     }
 
     int res = -1;
     struct unet_cmd *cmd;
-    int shmid = compose_cmd1(UNET_SRV_CMD_ACCEPT, (void*)socket, sizeof(struct sockaddr), &cmd);
+    int shmid = compose_cmd2(UNET_SRV_CMD_ACCEPT, (void*)socket, (void*)*addrlen, UNET_RECV_DATA_MAXLEN, &cmd);
     if (cmd)
     {
         res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
-        if (res)
+        if (res >= 0)
         {
             if (addr)
             {
-                void *ptr = cmd + UNET_CMD_OFFSET;
-                memcpy(addr, ptr, sizeof(struct sockaddr));
-                *addrlen = (socklen_t)cmd->argv[1];
+                void *ptr = (void *)cmd + UNET_CMD_OFFSET;
+                *addrlen = (socklen_t)(size_t)cmd->argv[1];
+                memcpy(addr, ptr, *addrlen);
             }
         }
         
         lwp_shmdt(cmd);
-        return res;
     }
 
+    lwp_shmrm(shmid);
     return res;
 }
 
@@ -451,11 +427,9 @@ ssize_t u_send (int socket, const void *dataptr, size_t size, int flags)
 {
     if (usocket_channel < 0)
     {
-        if (u_socket_init() == -1)
-        {
-            return -RT_ERROR;
-        }
+        if (u_socket_init() == -1) return -RT_ERROR;
     }
+
     int res = -1;
     struct unet_cmd *cmd;
     int shmid = compose_cmd4(UNET_SRV_CMD_SENDTO, (void*)socket, (void*)size, (void*)flags, (void*)0, size, &cmd);
@@ -465,9 +439,9 @@ ssize_t u_send (int socket, const void *dataptr, size_t size, int flags)
         memcpy(ptr, dataptr, size);
         res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
         lwp_shmdt(cmd);
-        return res;
     }
 
+    lwp_shmrm(shmid);
     return res;
 }
 
@@ -475,23 +449,41 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
 {
     if (usocket_channel < 0)
     {
-        if (u_socket_init() == -1)
-        {
-            return -RT_ERROR;
-        }
+        if (u_socket_init() == -1) return -RT_ERROR;
     }
+    
+    int shmid = recv_shmid;
+    struct unet_cmd *cmd = recv_cmd;
+    if (len > static_len)
+    {
+        lwp_shmdt(recv_cmd);
+        lwp_shmrm(recv_shmid);
+        recv_shmid = compose_cmd4(UNET_SRV_CMD_RECVFROM, (void*)socket, (void*)len, (void*)flags, RT_NULL, len, &recv_cmd);
+    }
+
     int res = -RT_ERROR;
-    struct unet_cmd *cmd;
-    int shmid = compose_cmd4(UNET_SRV_CMD_RECVFROM, (void*)socket, (void*)len, (void*)flags, RT_NULL, len, &cmd);
+    cmd->argv[0] = (void*)socket;
+    cmd->argv[1] = (void*)len;
+    cmd->argv[2] = (void*)flags;
+
     if (cmd)
     {
         res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
-        void *ptr = (void*)cmd + len;
-        memcpy(mem, ptr, len);
-        lwp_shmdt(cmd);
-        return res;
+        if (res >= 0)
+        {
+            void *ptr = (void*)cmd + UNET_CMD_OFFSET;
+            memcpy(mem, ptr, len);
+        }
+        // if (len > STATIC_SHM_SIZE)
+        // {
+            // lwp_shmdt(cmd);
+        // }
     }
 
+    // if (len > STATIC_SHM_SIZE)
+    // {
+        // lwp_shmrm(shmid);
+    // }
     return res;
 }
 
@@ -499,11 +491,9 @@ ssize_t u_sendto (int socket, const void *dataptr, size_t size, int flags, const
 {
     if (usocket_channel < 0)
     {
-        if (u_socket_init() == -1)
-        {
-            return -RT_ERROR;
-        }
+        if (u_socket_init() == -1) return -RT_ERROR;
     }
+    
     if (!size)
     {
         return -EINVAL;
@@ -515,11 +505,12 @@ ssize_t u_sendto (int socket, const void *dataptr, size_t size, int flags, const
     // }
 
     int res = -RT_ERROR;
+    int shmid;
 
     if (to)
     {
         struct unet_cmd *cmd;
-        int shmid = compose_cmd4(UNET_SRV_CMD_SENDTO, (void*)socket, (void*)size, (void*)flags, (void*)tolen, size+sizeof(struct sockaddr), &cmd);
+        shmid = compose_cmd4(UNET_SRV_CMD_SENDTO, (void*)socket, (void*)size, (void*)flags, (void*)tolen, size+sizeof(struct sockaddr), &cmd);
         if (cmd)
         {
             void *ptr = (void *)cmd + UNET_CMD_OFFSET;
@@ -528,23 +519,22 @@ ssize_t u_sendto (int socket, const void *dataptr, size_t size, int flags, const
             memcpy(ptr, to, sizeof(struct sockaddr));
             res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
             lwp_shmdt(cmd);
-            return res;
         }
     }
     else
     {
         struct unet_cmd *cmd;
-        int shmid = compose_cmd4(UNET_SRV_CMD_SENDTO, (void*)socket, (void*)size, (void*)flags, (void*)0, size, &cmd);
+        shmid = compose_cmd4(UNET_SRV_CMD_SENDTO, (void*)socket, (void*)size, (void*)flags, (void*)0, size, &cmd);
         if (cmd)
         {
             void *ptr = (void *)cmd + UNET_CMD_OFFSET;
             memcpy(ptr, dataptr, size);
             res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
             lwp_shmdt(cmd);
-            return res;
         }
     }
 
+    lwp_shmrm(shmid);
     return res;
 }
 
@@ -552,11 +542,9 @@ ssize_t u_recvfrom (int socket, void *mem, size_t len, int flags, struct sockadd
 {
     if (usocket_channel < 0)
     {
-        if (u_socket_init() == -1)
-        {
-            return -RT_ERROR;
-        }
+        if (u_socket_init() == -1) return -RT_ERROR;
     }
+    
     if (!len)
     {
         return -EINVAL;
@@ -573,41 +561,43 @@ ssize_t u_recvfrom (int socket, void *mem, size_t len, int flags, struct sockadd
     }
 
     int res = -RT_ERROR;
+    int shmid;
 
     if (from)
     {
         // ret = recvfrom(socket, kmem, len, flgs, &sa, fromlen);
         struct unet_cmd *cmd;
-        int shmid = compose_cmd4(UNET_SRV_CMD_RECVFROM, (void*)socket, (void*)len, (void*)flags, (void*)1, len+sizeof(struct sockaddr), &cmd);
+        shmid = compose_cmd4(UNET_SRV_CMD_RECVFROM, (void*)socket, (void*)len, (void*)flags, (void*)*fromlen, len+sizeof(struct sockaddr), &cmd);
         if (cmd)
         {
             res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
-            *fromlen = (socklen_t)cmd->argv[3];
+            *fromlen = (socklen_t)(size_t)cmd->argv[3];
 
             void *ptr = (void *)cmd + UNET_CMD_OFFSET;
             memcpy(mem, ptr, len);
             ptr += len;
             memcpy(from, ptr, sizeof(struct sockaddr));
             
-            
             lwp_shmdt(cmd);
-            return res;
         }
     }
     else
     {
         struct unet_cmd *cmd;
-        int shmid = compose_cmd4(UNET_SRV_CMD_RECVFROM, (void*)socket, (void*)len, (void*)flags, (void*)0, len, &cmd);
+        shmid = compose_cmd4(UNET_SRV_CMD_RECVFROM, (void*)socket, (void*)len, (void*)flags, RT_NULL, len, &cmd);
         if (cmd)
         {
             res = (int)unet_cmd_send_recv(usocket_channel, (void*)(size_t)shmid);
-            void *ptr = (void *)cmd + UNET_CMD_OFFSET;
-            memcpy(mem, ptr, len);
+            if (res)
+            {
+                void *ptr = (void *)cmd + UNET_CMD_OFFSET;
+                memcpy(mem, ptr, len);
+            }
             lwp_shmdt(cmd);
-            return res;
         }
     }
 
+    lwp_shmrm(shmid);
     return res;
 }
 
@@ -615,15 +605,13 @@ int u_setsockopt (int socket, int level, int optname, const void *optval, sockle
 {
     if (usocket_channel < 0)
     {
-        if (u_socket_init() == -1)
-        {
-            return -RT_ERROR;
-        }
+        if (u_socket_init() == -1) return -RT_ERROR;
     }
-    int res = -RT_ERROR;
-    struct unet_cmd *cmd;
+    
+    int res = -RT_ERROR;;
     convert_sockopt(&level, &optname);
 
+    struct unet_cmd *cmd;
     int shmid = compose_cmd4(UNET_SRV_CMD_SETSOCKOPT, (void*)socket, (void*)level, (void*)optname, (void*)optlen, optlen, &cmd);
     if (cmd)
     {
@@ -632,8 +620,8 @@ int u_setsockopt (int socket, int level, int optname, const void *optval, sockle
         void *ptr = (void *)cmd + UNET_CMD_OFFSET;
         memcpy(ptr, optval, optlen);
         lwp_shmdt(cmd);
-        return res;
     }
 
+    lwp_shmrm(shmid);
     return res;
 }
