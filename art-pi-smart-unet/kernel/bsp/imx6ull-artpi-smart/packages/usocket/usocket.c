@@ -260,7 +260,7 @@ int u_socket_init()
         return 0;
     }
 }
-INIT_APP_EXPORT(u_socket_init);
+// INIT_APP_EXPORT(u_socket_init);
 
 int u_socket (int domain, int type, int protocol)
 {

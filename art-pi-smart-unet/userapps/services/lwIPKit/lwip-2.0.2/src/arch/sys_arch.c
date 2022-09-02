@@ -69,6 +69,20 @@ static void tcpip_init_done_callback(void *arg)
 /**
  * LwIP system initialization
  */
+#define INPUT_NOTIFICATION 0x01
+sys_mbox_t * mbox_global = 0;
+void tcpip_input_timer_entry()
+{
+    while (1)
+    {
+        if (mbox_global)
+        {
+            rt_thread_mdelay(100);
+            rt_mb_send(*mbox_global, INPUT_NOTIFICATION);
+        }
+    }
+}
+
 extern int eth_system_device_init_private(void);
 int lwip_system_init(void)
 {
@@ -118,6 +132,9 @@ int lwip_system_init(void)
         netifapi_netif_set_addr(netif_default, &ipaddr, &netmask, &gw);
     }
 #endif
+
+    rt_thread_t tid = rt_thread_create("tcpip_input_timer", tcpip_input_timer_entry, NULL, 1024, 25, 10); 
+    if (tid) rt_thread_startup(tid);
 
     init_ok = RT_TRUE;
 
@@ -332,6 +349,12 @@ void sys_mutex_set_invalid(sys_mutex_t *mutex)
  */
 err_t sys_mbox_new(sys_mbox_t *mbox, int size)
 {
+    if (size == RT_LWIP_TCPTHREAD_MBOX_SIZE)
+    {
+        printf("set mbox_global\n");
+        mbox_global = mbox;
+    }
+    
     static unsigned short counter = 0;
     char tname[RT_NAME_MAX];
     sys_mbox_t tmpmbox;
@@ -373,7 +396,8 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 {
     RT_DEBUG_NOT_IN_INTERRUPT;
 
-    rt_mb_send_wait(*mbox, (rt_ubase_t)msg, RT_WAITING_FOREVER);
+    // rt_mb_send_wait(*mbox, (rt_ubase_t)msg, RT_WAITING_FOREVER);
+    sys_mbox_trypost(mbox, msg);
 
     return;
 }
@@ -383,12 +407,88 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
  *
  * @return return ERR_OK if the "msg" is posted, ERR_MEM if the mailbox is full
  */
+#define INPUT_BUF_LEN 10
+static void* INPUT_buffer[INPUT_BUF_LEN];
+static int input_ptr = 0;
+static int output_ptr = 0;
+static int buffer_full()
+{
+    return input_ptr == ((output_ptr + 1) % INPUT_BUF_LEN);
+}
+
+static int buffer_empty()
+{
+    return input_ptr == output_ptr;
+}
+
+static int buffer_enqueue(void *data)
+{
+    if (buffer_full())
+    {
+        return -1;
+    }
+
+    INPUT_buffer[input_ptr] = data;
+    input_ptr = (input_ptr + 1) % INPUT_BUF_LEN;
+    return 0;
+}
+
+static void* buffer_dequeue()
+{
+    if (buffer_empty())
+    {
+        return RT_NULL;
+    }
+
+    void *res = INPUT_buffer[output_ptr];
+    output_ptr = (output_ptr + 1) % INPUT_BUF_LEN;
+    return res;
+}
+
+rt_err_t post_msg(sys_mbox_t *mbox, void **msg)
+{
+    if (mbox == mbox_global)
+    {
+        if (((struct tcpip_msg*)msg)->type == TCPIP_MSG_INPKT)
+        {
+            while (buffer_enqueue(msg) == -1)
+            {
+                rt_mb_send(*mbox, INPUT_NOTIFICATION);
+            }
+
+            return ERR_OK;
+        } 
+    }
+
+    return rt_mb_send_wait(*mbox, (rt_ubase_t)msg, RT_WAITING_FOREVER);
+}
+
+rt_err_t fetch_msg(sys_mbox_t *mbox, void **msg, u32_t t)
+{
+    if (mbox == mbox_global)
+    {
+        rt_err_t ret;
+        do
+        {
+            *msg = buffer_dequeue();
+            if (*msg)
+            {
+                return RT_EOK;
+            } 
+            ret = rt_mb_recv(*mbox, (rt_ubase_t *)msg, t);
+        } while (*msg == (void*)INPUT_NOTIFICATION);
+
+        return ret;
+    }
+    else 
+    {
+        return rt_mb_recv(*mbox, (rt_ubase_t *)msg, t); 
+    }
+}
+
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 {
-    if (rt_mb_send(*mbox, (rt_ubase_t)msg) == RT_EOK)
-        return ERR_OK;
-
-    return ERR_MEM;
+    return post_msg(mbox, msg);
 }
 
 /** Wait for a new message to arrive in the mbox
@@ -421,7 +521,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
             t = timeout / (1000/RT_TICK_PER_SECOND);
     }
 
-    ret = rt_mb_recv(*mbox, (rt_ubase_t *)msg, t);
+    ret = fetch_msg(mbox, msg, t);
 
     if(ret == -RT_ETIMEOUT)
         return SYS_ARCH_TIMEOUT;
@@ -452,8 +552,8 @@ u32_t sys_arch_mbox_tryfetch(sys_mbox_t *mbox, void **msg)
 {
     int ret;
 
-    ret = rt_mb_recv(*mbox, (rt_ubase_t *)msg, 0);
-
+    ret = fetch_msg(mbox, msg, 0);
+       
     if(ret == -RT_ETIMEOUT)
         return SYS_ARCH_TIMEOUT;
     else
