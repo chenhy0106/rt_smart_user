@@ -69,15 +69,58 @@ static void tcpip_init_done_callback(void *arg)
 /**
  * LwIP system initialization
  */
+
+#define INPUT_BUF_LEN 8
+static void* INPUT_buffer[INPUT_BUF_LEN];
+static int input_ptr = 0;
+static int output_ptr = 0;
+static int buffer_full()
+{
+    return output_ptr == ((input_ptr + 1) % INPUT_BUF_LEN);
+}
+
+static int buffer_empty()
+{
+    return input_ptr == output_ptr;
+}
+
+static int buffer_enqueue(void *data)
+{
+    if (buffer_full())
+    {
+        return -1;
+    }
+
+    INPUT_buffer[input_ptr] = data;
+    input_ptr = (input_ptr + 1) % INPUT_BUF_LEN;
+    // printf("e %d\n", input_ptr);
+
+    return 0;
+}
+
+static void* buffer_dequeue()
+{
+    if (buffer_empty())
+    {
+        return RT_NULL;
+    }
+
+    void *res = INPUT_buffer[output_ptr];
+    output_ptr = (output_ptr + 1) % INPUT_BUF_LEN;
+    // printf("d %d\n", output_ptr);
+
+    return res;
+}
+
 #define INPUT_NOTIFICATION 0x01
 sys_mbox_t * mbox_global = 0;
 void tcpip_input_timer_entry()
 {
     while (1)
     {
-        if (mbox_global)
+        rt_thread_mdelay(1);
+        if (mbox_global && !buffer_empty())
         {
-            rt_thread_mdelay(100);
             rt_mb_send(*mbox_global, INPUT_NOTIFICATION);
         }
     }
@@ -387,64 +430,6 @@ void sys_mbox_free(sys_mbox_t *mbox)
     return;
 }
 
-/** Post a message to an mbox - may not fail
- * -> blocks if full, only used from tasks not from ISR
- * @param mbox mbox to posts the message
- * @param msg message to post (ATTENTION: can be NULL)
- */
-void sys_mbox_post(sys_mbox_t *mbox, void *msg)
-{
-    RT_DEBUG_NOT_IN_INTERRUPT;
-
-    // rt_mb_send_wait(*mbox, (rt_ubase_t)msg, RT_WAITING_FOREVER);
-    sys_mbox_trypost(mbox, msg);
-
-    return;
-}
-
-/*
- * Try to post the "msg" to the mailbox
- *
- * @return return ERR_OK if the "msg" is posted, ERR_MEM if the mailbox is full
- */
-#define INPUT_BUF_LEN 10
-static void* INPUT_buffer[INPUT_BUF_LEN];
-static int input_ptr = 0;
-static int output_ptr = 0;
-static int buffer_full()
-{
-    return input_ptr == ((output_ptr + 1) % INPUT_BUF_LEN);
-}
-
-static int buffer_empty()
-{
-    return input_ptr == output_ptr;
-}
-
-static int buffer_enqueue(void *data)
-{
-    if (buffer_full())
-    {
-        return -1;
-    }
-
-    INPUT_buffer[input_ptr] = data;
-    input_ptr = (input_ptr + 1) % INPUT_BUF_LEN;
-    return 0;
-}
-
-static void* buffer_dequeue()
-{
-    if (buffer_empty())
-    {
-        return RT_NULL;
-    }
-
-    void *res = INPUT_buffer[output_ptr];
-    output_ptr = (output_ptr + 1) % INPUT_BUF_LEN;
-    return res;
-}
-
 rt_err_t post_msg(sys_mbox_t *mbox, void **msg)
 {
     if (mbox == mbox_global)
@@ -485,6 +470,27 @@ rt_err_t fetch_msg(sys_mbox_t *mbox, void **msg, u32_t t)
         return rt_mb_recv(*mbox, (rt_ubase_t *)msg, t); 
     }
 }
+
+/** Post a message to an mbox - may not fail
+ * -> blocks if full, only used from tasks not from ISR
+ * @param mbox mbox to posts the message
+ * @param msg message to post (ATTENTION: can be NULL)
+ */
+void sys_mbox_post(sys_mbox_t *mbox, void *msg)
+{
+    RT_DEBUG_NOT_IN_INTERRUPT;
+
+    // rt_mb_send_wait(*mbox, (rt_ubase_t)msg, RT_WAITING_FOREVER);
+    post_msg(mbox, msg);
+
+    return;
+}
+
+/*
+ * Try to post the "msg" to the mailbox
+ *
+ * @return return ERR_OK if the "msg" is posted, ERR_MEM if the mailbox is full
+ */
 
 err_t sys_mbox_trypost(sys_mbox_t *mbox, void *msg)
 {
