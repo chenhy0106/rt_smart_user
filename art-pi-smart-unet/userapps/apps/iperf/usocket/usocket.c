@@ -452,16 +452,18 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
         if (u_socket_init() == -1) return -RT_ERROR;
     }
     
-    int shmid = recv_shmid;
-    struct unet_cmd *cmd = recv_cmd;
     if (len > static_len)
     {
         lwp_shmdt(recv_cmd);
         lwp_shmrm(recv_shmid);
+        printf("****** ddddd\n");
         recv_shmid = compose_cmd4(UNET_SRV_CMD_RECVFROM, (void*)socket, (void*)len, (void*)flags, RT_NULL, len, &recv_cmd);
+        static_len = len;
     }
 
     int res = -RT_ERROR;
+    int shmid = recv_shmid;
+    struct unet_cmd *cmd = recv_cmd;    
     cmd->argv[0] = (void*)socket;
     cmd->argv[1] = (void*)len;
     cmd->argv[2] = (void*)flags;
@@ -474,15 +476,15 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
             void *ptr = (void*)cmd + UNET_CMD_OFFSET;
             memcpy(mem, ptr, len);
         }
-        // if (len > STATIC_SHM_SIZE)
+        // if (len > static_len)
         // {
-            // lwp_shmdt(cmd);
+        //     lwp_shmdt(cmd);
         // }
     }
 
-    // if (len > STATIC_SHM_SIZE)
+    // if (len > static_len)
     // {
-        // lwp_shmrm(shmid);
+    //     lwp_shmrm(shmid);
     // }
     return res;
 }

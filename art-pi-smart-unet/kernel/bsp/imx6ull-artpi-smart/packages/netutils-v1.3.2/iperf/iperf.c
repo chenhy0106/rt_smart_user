@@ -341,7 +341,7 @@ void iperf_server(void *thread_param)
         {
             // printf("*******%s %d, before u_recv: %d\n", __FILE__, __LINE__, rt_tick_get());
             bytes_received = u_recv(connected, recv_data, IPERF_BUFSZ, 0);
-            // printf("%d bytes\n", bytes_received);
+            printf("%d bytes\n", bytes_received);
             if (bytes_received <= 0) break;
 
             recvlen += bytes_received;
