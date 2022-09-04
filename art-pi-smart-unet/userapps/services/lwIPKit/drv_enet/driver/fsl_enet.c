@@ -219,10 +219,10 @@ uint32_t ENET_GetInstance(ENET_Type *base)
 
 #if defined (FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE) && FSL_FEATURE_ENET_HAS_INTERRUPT_COALESCE
 enet_intcoalesce_config_t intcoalesce_config = {
-    {20},
-    {10},
-    {20},
-    {10}
+    {30},
+    {5},
+    {30},
+    {5}
 };
 
 #endif
