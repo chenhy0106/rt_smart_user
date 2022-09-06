@@ -70,7 +70,7 @@ static void tcpip_init_done_callback(void *arg)
  * LwIP system initialization
  */
 
-#define INPUT_BUF_LEN 3
+#define INPUT_BUF_LEN 1024
 static void* INPUT_buffer[INPUT_BUF_LEN];
 static int input_ptr = 0;
 static int output_ptr = 0;

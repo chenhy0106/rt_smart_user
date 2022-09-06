@@ -32,23 +32,30 @@
 #define RT_LWIP_TCP
 #define RT_LWIP_RAW
 #define RT_MEMP_NUM_NETCONN 8
-#define RT_LWIP_PBUF_NUM 64
+#define RT_LWIP_PBUF_NUM 2048 // the number of buffers in the pbuf pool.
 
-#define RT_LWIP_PBUF_STRUCT_NUM        1024
-#define RT_LWIP_NETBUF_NUM             1024
-#define RT_MEMP_NUM_TCPIP_MSG_API      1024
-#define RT_MEMP_NUM_TCPIP_MSG_INPKT    1024
-#define RT_TCP_RECVMBOX_SIZE   64
-#define RT_UDP_RECVMBOX_SIZE   64
-#define RT_RECV_BUFSIZE_DEFAULT            1024
+#define RT_LWIP_PBUF_STRUCT_NUM        2048 // the number of memp struct pbufs. If the application
+                                            // sends a lot of data out of ROM (or other static memory), this
+                                            // should be set high.
+#define RT_LWIP_NETBUF_NUM             2048 // the number of struct netbufs.
+
+// the number of struct tcpip_msg, which is used
+// for sequential API communication and incoming packets. 
+#define RT_MEMP_NUM_TCPIP_MSG_API      2048
+#define RT_MEMP_NUM_TCPIP_MSG_INPKT    2048
+
+#define RT_TCP_RECVMBOX_SIZE   65535 //  The mailbox size for the incoming packets on a NETCONN_TCP.
+#define RT_UDP_RECVMBOX_SIZE   1024
+#define RT_RECV_BUFSIZE_DEFAULT            2048 // maximum amount of bytes queued in recvmbox
+                                                // not used for TCP: adjust TCP_WND instead
 
 #define RT_LWIP_RAW_PCB_NUM 4
 #define RT_LWIP_UDP_PCB_NUM 8
 #define RT_LWIP_TCP_PCB_NUM 8
-#define RT_LWIP_TCP_SEG_NUM 65535
-#define RT_LWIP_TCP_SND_BUF 65535
+#define RT_LWIP_TCP_SEG_NUM 8192  // the number of simultaneously queued TCP segments.
+#define RT_LWIP_TCP_SND_BUF 8192 // TCP sender buffer space (bytes).
 #define RT_LWIP_TCP_WND 65535
-#define RT_LWIP_TCPTHREAD_PRIORITY 23
+#define RT_LWIP_TCPTHREAD_PRIORITY 25
 #define RT_LWIP_TCPTHREAD_MBOX_SIZE 257
 #define RT_LWIP_TCPTHREAD_STACKSIZE 8192
 // #define LWIP_NO_RX_THREAD
