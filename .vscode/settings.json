@@ -50,6 +50,8 @@
         "dfs_private.h": "c",
         "usocket.h": "c",
         "page.h": "c",
-        "ethernet.h": "c"
+        "ethernet.h": "c",
+        "cc.h": "c",
+        "sys.h": "c"
     }
 }

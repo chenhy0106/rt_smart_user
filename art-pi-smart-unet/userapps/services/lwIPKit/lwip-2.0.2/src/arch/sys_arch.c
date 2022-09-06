@@ -58,6 +58,8 @@
 #define RT_DEBUG_NOT_IN_INTERRUPT
 #endif
 
+void tcpip_mb_timer_entry();
+
 /*
  * Initialize the ethernetif layer and set network interface device up
  */
@@ -69,63 +71,6 @@ static void tcpip_init_done_callback(void *arg)
 /**
  * LwIP system initialization
  */
-
-#define INPUT_BUF_LEN 1024
-static void* INPUT_buffer[INPUT_BUF_LEN];
-static int input_ptr = 0;
-static int output_ptr = 0;
-static int buffer_full()
-{
-    return output_ptr == ((input_ptr + 1) % INPUT_BUF_LEN);
-}
-
-static int buffer_empty()
-{
-    return input_ptr == output_ptr;
-}
-
-static int buffer_enqueue(void *data)
-{
-    if (buffer_full())
-    {
-        return -1;
-    }
-
-    INPUT_buffer[input_ptr] = data;
-    input_ptr = (input_ptr + 1) % INPUT_BUF_LEN;
-    // printf("e %d\n", input_ptr);
-
-    return 0;
-}
-
-static void* buffer_dequeue()
-{
-    if (buffer_empty())
-    {
-        return RT_NULL;
-    }
-
-    void *res = INPUT_buffer[output_ptr];
-    output_ptr = (output_ptr + 1) % INPUT_BUF_LEN;
-    // printf("d %d\n", output_ptr);
-
-    return res;
-}
-
-#define INPUT_NOTIFICATION 0x01
-sys_mbox_t * mbox_global = 0;
-void tcpip_input_timer_entry()
-{
-    while (1)
-    {
-        rt_thread_mdelay(1);
-        if (mbox_global && !buffer_empty())
-        {
-            rt_mb_send(*mbox_global, INPUT_NOTIFICATION);
-        }
-    }
-}
-
 extern int eth_system_device_init_private(void);
 int lwip_system_init(void)
 {
@@ -176,7 +121,7 @@ int lwip_system_init(void)
     }
 #endif
 
-    rt_thread_t tid = rt_thread_create("tcpip_input_timer", tcpip_input_timer_entry, NULL, 1024, 25, 10); 
+    rt_thread_t tid = rt_thread_create("tcpip_mb_timer", tcpip_mb_timer_entry, NULL, 1024, 25, 10); 
     if (tid) rt_thread_startup(tid);
 
     init_ok = RT_TRUE;
@@ -383,7 +328,63 @@ void sys_mutex_set_invalid(sys_mutex_t *mutex)
 }
 #endif
 
-/* ====================== Mailbox ====================== */
+/* ====================== MailBox ====================== */
+
+#define INPUT_BUF_LEN 1024
+#define INPUT_NOTIFICATION 0x00
+
+struct mbbuf_list
+{
+    rt_mailbox_buff_t mbbuf;
+    struct mbbuf_list *next;
+};
+
+struct mbbuf_list head = {0, 0};
+static void list_insert(rt_mailbox_buff_t new_mbbuf)
+{
+    struct mbbuf_list *cur = &head;
+    while (cur->next)
+    {
+        cur = cur->next;
+    }
+
+    struct mbbuf_list *new_node = (struct mbbuf_list *)malloc(sizeof(struct mbbuf_list));
+    cur->next = new_node;
+    new_node->next = RT_NULL;
+    new_node->mbbuf = new_mbbuf;
+}
+
+static void list_del(rt_mailbox_buff_t del_mbbuf)
+{
+    struct mbbuf_list *cur = &head;
+    while (cur->next)
+    {
+        if (cur->next->mbbuf == del_mbbuf)
+        {
+            cur->next = cur->next->next;
+            return;
+        }
+        cur = cur->next;
+    }
+}
+
+void tcpip_mb_timer_entry()
+{
+    while (1)
+    {
+        rt_thread_mdelay(1);
+        struct mbbuf_list *cur = &head;
+        while (cur->next)
+        {
+            if (!buffer_empty(cur->next->mbbuf->cb))
+            {
+                rt_mb_send(cur->next->mbbuf->mb, INPUT_NOTIFICATION);
+            }
+            
+            cur = cur->next;
+        }
+    }
+}
 
 /*
  * Create an empty mailbox for maximum "size" elements
@@ -392,30 +393,25 @@ void sys_mutex_set_invalid(sys_mutex_t *mutex)
  */
 err_t sys_mbox_new(sys_mbox_t *mbox, int size)
 {
-    if (size == RT_LWIP_TCPTHREAD_MBOX_SIZE)
-    {
-        printf("set mbox_global\n");
-        mbox_global = mbox;
-    }
-    
     static unsigned short counter = 0;
     char tname[RT_NAME_MAX];
-    sys_mbox_t tmpmbox;
 
     RT_DEBUG_NOT_IN_INTERRUPT;
 
     rt_snprintf(tname, RT_NAME_MAX, "%s%d", SYS_LWIP_MBOX_NAME, counter);
-    counter ++;
+    counter++;
 
-    tmpmbox = rt_mb_create(tname, size, RT_IPC_FLAG_FIFO);
-    if (tmpmbox != RT_NULL)
+    *mbox = malloc(sizeof(struct rt_mailbox_buff));
+    (*mbox)->cb = buffer_new(INPUT_BUF_LEN);
+    (*mbox)->mb = rt_mb_create(tname, size, RT_IPC_FLAG_FIFO);
+
+    if (!(*mbox) || !(*mbox)->cb || !(*mbox)->cb)
     {
-        *mbox = tmpmbox;
-
-        return ERR_OK;
+        return ERR_MEM;
     }
 
-    return ERR_MEM;
+    list_insert(*mbox);
+    return ERR_OK;
 }
 
 /*
@@ -425,50 +421,38 @@ void sys_mbox_free(sys_mbox_t *mbox)
 {
     RT_DEBUG_NOT_IN_INTERRUPT;
 
-    rt_mb_delete(*mbox);
+    rt_mb_delete((*mbox)->mb);
+    buffer_del((*mbox)->cb);
+    list_del(*mbox);
+    free(*mbox);
 
     return;
 }
 
-rt_err_t post_msg(sys_mbox_t *mbox, void **msg)
+rt_err_t post_msg(sys_mbox_t *mbox, void *msg)
 {
-    if (mbox == mbox_global)
+    while (buffer_enqueue((*mbox)->cb, (rt_ubase_t)msg) == -1)
     {
-        if (((struct tcpip_msg*)msg)->type == TCPIP_MSG_INPKT)
-        {
-            while (buffer_enqueue(msg) == -1)
-            {
-                rt_mb_send(*mbox, INPUT_NOTIFICATION);
-            }
-
-            return ERR_OK;
-        } 
+        rt_mb_send((*mbox)->mb, INPUT_NOTIFICATION);
     }
 
-    return rt_mb_send_wait(*mbox, (rt_ubase_t)msg, RT_WAITING_FOREVER);
+    return ERR_OK;
 }
 
 rt_err_t fetch_msg(sys_mbox_t *mbox, void **msg, u32_t t)
 {
-    if (mbox == mbox_global)
+    rt_err_t ret;
+    do
     {
-        rt_err_t ret;
-        do
+        ret = buffer_dequeue((*mbox)->cb, (rt_ubase_t*)msg);
+        if (ret == 0)
         {
-            *msg = buffer_dequeue();
-            if (*msg)
-            {
-                return RT_EOK;
-            } 
-            ret = rt_mb_recv(*mbox, (rt_ubase_t *)msg, t);
-        } while (*msg == (void*)INPUT_NOTIFICATION);
+            return RT_EOK;
+        } 
+        ret = rt_mb_recv((*mbox)->mb, (rt_ubase_t *)msg, t);
+    } while (*msg == (void*)INPUT_NOTIFICATION);
 
-        return ret;
-    }
-    else 
-    {
-        return rt_mb_recv(*mbox, (rt_ubase_t *)msg, t); 
-    }
+    return ret;
 }
 
 /** Post a message to an mbox - may not fail
@@ -480,7 +464,6 @@ void sys_mbox_post(sys_mbox_t *mbox, void *msg)
 {
     RT_DEBUG_NOT_IN_INTERRUPT;
 
-    // rt_mb_send_wait(*mbox, (rt_ubase_t)msg, RT_WAITING_FOREVER);
     post_msg(mbox, msg);
 
     return;
