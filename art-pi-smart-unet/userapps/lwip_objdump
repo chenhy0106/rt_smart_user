@@ -16481,7 +16481,7 @@ void tcpip_mb_timer_entry()
   10aab8:	e24dd008 	sub	sp, sp, #8
     while (1)
     {
-        rt_thread_mdelay(1);
+        rt_thread_mdelay(INPUT_BUF_TIMEOUT);
   10aabc:	e3a00001 	mov	r0, #1
   10aac0:	ebffdced 	bl	101e7c <rt_thread_mdelay>
         struct mbbuf_list *cur = &head;
@@ -16573,7 +16573,7 @@ err_t sys_mbox_new(sys_mbox_t *mbox, int size)
     (*mbox)->cb = buffer_new(INPUT_BUF_LEN);
   10abac:	e51b3018 	ldr	r3, [fp, #-24]	; 0xffffffe8
   10abb0:	e5934000 	ldr	r4, [r3]
-  10abb4:	e3a00b01 	mov	r0, #1024	; 0x400
+  10abb4:	e3a00080 	mov	r0, #128	; 0x80
   10abb8:	eb00017f 	bl	10b1bc <buffer_new>
   10abbc:	e1a03000 	mov	r3, r0
   10abc0:	e5843004 	str	r3, [r4, #4]
@@ -16873,7 +16873,7 @@ u32_t sys_arch_mbox_fetch(sys_mbox_t *mbox, void **msg, u32_t timeout)
   10ae8c:	e30604e0 	movw	r0, #25824	; 0x64e0
   10ae90:	e3400014 	movt	r0, #20
   10ae94:	ebffe09e 	bl	103114 <rt_kprintf>
-  10ae98:	e3001207 	movw	r1, #519	; 0x207
+  10ae98:	e3a01f82 	mov	r1, #520	; 0x208
   10ae9c:	e3060488 	movw	r0, #25736	; 0x6488
   10aea0:	e3400014 	movt	r0, #20
   10aea4:	eb00006e 	bl	10b064 <sys_arch_assert>
@@ -17028,7 +17028,7 @@ sys_thread_t sys_thread_new(const char    *name,
   10afe0:	e51b3008 	ldr	r3, [fp, #-8]
   10afe4:	e3530000 	cmp	r3, #0
   10afe8:	1a000005 	bne	10b004 <sys_thread_new+0x70>
-  10afec:	e3a02f95 	mov	r2, #596	; 0x254
+  10afec:	e3002255 	movw	r2, #597	; 0x255
   10aff0:	e306152c 	movw	r1, #25900	; 0x652c
   10aff4:	e3401014 	movt	r1, #20
   10aff8:	e3060500 	movw	r0, #25856	; 0x6500
@@ -17104,7 +17104,7 @@ void sys_arch_assert(const char *file, int line)
   10b084:	e3400014 	movt	r0, #20
   10b088:	ebffe021 	bl	103114 <rt_kprintf>
     RT_ASSERT(0);
-  10b08c:	e3002272 	movw	r2, #626	; 0x272
+  10b08c:	e3002273 	movw	r2, #627	; 0x273
   10b090:	e306153c 	movw	r1, #25916	; 0x653c
   10b094:	e3401014 	movt	r1, #20
   10b098:	e3060528 	movw	r0, #25896	; 0x6528

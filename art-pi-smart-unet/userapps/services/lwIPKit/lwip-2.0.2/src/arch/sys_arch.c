@@ -330,7 +330,8 @@ void sys_mutex_set_invalid(sys_mutex_t *mutex)
 
 /* ====================== MailBox ====================== */
 
-#define INPUT_BUF_LEN 1024
+#define INPUT_BUF_LEN 128
+#define INPUT_BUF_TIMEOUT 1
 #define INPUT_NOTIFICATION 0x00
 
 struct mbbuf_list
@@ -372,7 +373,7 @@ void tcpip_mb_timer_entry()
 {
     while (1)
     {
-        rt_thread_mdelay(1);
+        rt_thread_mdelay(INPUT_BUF_TIMEOUT);
         struct mbbuf_list *cur = &head;
         while (cur->next)
         {

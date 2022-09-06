@@ -23,7 +23,7 @@
 #include <rtdbg.h>
 
 #define IPERF_PORT          5001
-#define IPERF_BUFSZ         (4 * 1024)
+#define IPERF_BUFSZ         (8 * 1024)
 
 #define IPERF_MODE_STOP     0
 #define IPERF_MODE_SERVER   1
