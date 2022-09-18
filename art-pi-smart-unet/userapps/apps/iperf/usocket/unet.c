@@ -13,12 +13,8 @@ int compose_cmd(uint32_t cmd, void *arg0, void *arg1, void *arg2,
     /*
      * Usually use the current thread ID to label the shared memory, like this:
      * size_t key = (size_t) rt_thread_self();
-     *
-     * But we need to send commands to 2 channels, here is a simple way to avoid
-     * ID conflicts.
      */
     key = key + 2;
-    // size_t key = (size_t) rt_thread_self();
 
     shmid = lwp_shmget(key, len, 1);    /* create a new shared-memory */
     if (shmid == -1)

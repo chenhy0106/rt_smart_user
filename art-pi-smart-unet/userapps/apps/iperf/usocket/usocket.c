@@ -1,7 +1,6 @@
 #include <rtthread.h>
 #include "usocket.h"
 #include "unet.h"
-// #include <lwp_user_mm.h>
 
 /* The same socket option is defined differently in the user interfaces and the
  * implementation. The options should be converted in the kernel. */
@@ -245,14 +244,13 @@ static int usocket_channel = -1;
 const char * usocket_name = "lwIPKit";
 
 #define STATIC_SHM_SIZE (2 * 4096 - UNET_CMD_OFFSET)
-// #define STATIC_SHM_SIZE UNET_RECV_DATA_MAXLEN
 
 int u_socket_init()
 {
     static_len = STATIC_SHM_SIZE;
     recv_shmid = compose_cmd0(UNET_SRV_CMD_RECVFROM, static_len, &recv_cmd);
 
-    usocket_channel  = rt_channel_open(usocket_name, O_CREAT);
+    usocket_channel  = rt_channel_open(usocket_name, O_RDWR);
     if (usocket_channel < 0) 
     {
         usocket_channel = -1;
@@ -314,10 +312,7 @@ int u_bind (int socket, const struct sockaddr *name, socklen_t namelen)
     {
         if (u_socket_init() == -1) return -RT_ERROR;
     }
-    // if (!lwp_user_accessable((void *)name, namelen))
-    // {
-    //     return -EFAULT;
-    // }
+
     #ifdef SAL_USING_AF_UNIX
     if (name->sa_family  == AF_UNIX)
     {
@@ -346,10 +341,6 @@ int u_connect (int socket, const struct sockaddr *name, socklen_t namelen)
     {
         if (u_socket_init() == -1) return -RT_ERROR;
     }
-    // if (!lwp_user_accessable((void *)name, namelen))
-    // {
-    //     return -EFAULT;
-    // }
 
     #ifdef SAL_USING_AF_UNIX
     if (name->sa_family  == AF_UNIX)
@@ -456,7 +447,6 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
     {
         lwp_shmdt(recv_cmd);
         lwp_shmrm(recv_shmid);
-        printf("****** ddddd\n");
         recv_shmid = compose_cmd4(UNET_SRV_CMD_RECVFROM, (void*)socket, (void*)len, (void*)flags, RT_NULL, len, &recv_cmd);
         static_len = len;
     }
@@ -476,16 +466,7 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
             void *ptr = (void*)cmd + UNET_CMD_OFFSET;
             memcpy(mem, ptr, len);
         }
-        // if (len > static_len)
-        // {
-        //     lwp_shmdt(cmd);
-        // }
     }
-
-    // if (len > static_len)
-    // {
-    //     lwp_shmrm(shmid);
-    // }
     return res;
 }
 
@@ -500,11 +481,6 @@ ssize_t u_sendto (int socket, const void *dataptr, size_t size, int flags, const
     {
         return -EINVAL;
     }
-
-    // if (!lwp_user_accessable((void *)dataptr, size))
-    // {
-    //     return -EFAULT;
-    // }
 
     int res = -RT_ERROR;
     int shmid;
@@ -551,11 +527,6 @@ ssize_t u_recvfrom (int socket, void *mem, size_t len, int flags, struct sockadd
     {
         return -EINVAL;
     }
-
-    // if (!lwp_user_accessable((void *)mem, len))
-    // {
-    //     return -EFAULT;
-    // }
 
     if (flags == 0x2)
     {

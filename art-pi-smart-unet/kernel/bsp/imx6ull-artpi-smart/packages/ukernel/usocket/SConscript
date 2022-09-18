@@ -1,0 +1,9 @@
+from building import *
+
+cwd     = GetCurrentDir()
+path    = [cwd]
+src     = ['usocket.c']
+
+group = DefineGroup('UNET', src, depend = ['SAL_USING_UNET', 'RT_USING_SAL'], CPPPATH = path)
+
+Return('group')

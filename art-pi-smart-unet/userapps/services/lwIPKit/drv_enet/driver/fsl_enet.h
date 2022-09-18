@@ -1067,49 +1067,6 @@ status_t ENET_ReadFrame(ENET_Type *base,enet_handle_t *handle,const enet_config_
 status_t ENET_SendFrame(ENET_Type *base, enet_handle_t *handle, const uint8_t *data, uint16_t length,uint32_t last_flag);
 
 /*!
- * @brief The transmit IRQ handler.
- *
- * @param base  ENET peripheral base address.
- * @param handle The ENET handler pointer.
- */
-void ENET_TransmitIRQHandler(ENET_Type *base, enet_handle_t *handle);
-
-/*!
- * @brief The receive IRQ handler.
- *
- * @param base  ENET peripheral base address.
- * @param handle The ENET handler pointer.
- */
-void ENET_ReceiveIRQHandler(ENET_Type *base, enet_handle_t *handle);
-
-/*!
- * @brief The error IRQ handler.
- *
- * @param base  ENET peripheral base address.
- * @param handle The ENET handler pointer.
- */
-void ENET_ErrorIRQHandler(ENET_Type *base, enet_handle_t *handle);
-
-/*!
- * @brief the common IRQ handler for the tx/rx/error etc irq handler.
- *
- * This is used for the combined tx/rx/error interrupt for single ring (ring 0).
- *
- * @param base  ENET peripheral base address.
- */
-void ENET_CommonFrame0IRQHandler(ENET_Type *base);
-/* @} */
-
-/*!
- * @brief the common IRQ handler for the tx/rx/error etc irq handler.
- *
- * This is used for the combined tx/rx/error interrupt for single ring (ring 0).
- * @param irq  gic interrupt number.
- * @param base  ENET peripheral base address.
- */
-void ENET_DriverIRQHandler(int irq, void *base);
-
-/*!
  * config pin for enet function
  */
 void ENET_InitPins(void);

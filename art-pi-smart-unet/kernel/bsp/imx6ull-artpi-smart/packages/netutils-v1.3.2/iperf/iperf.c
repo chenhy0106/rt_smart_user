@@ -306,21 +306,17 @@ void iperf_server(void *thread_param)
 
     while (param.mode != IPERF_MODE_STOP)
     {
-        // printf("********%s %d\n", __FILE__, __LINE__);
         FD_ZERO(&readset);
         FD_SET(sock, &readset);
 
         if (select(sock + 1, &readset, RT_NULL, RT_NULL, &timeout) == 0)
         {
-            // printf("********%s %d\n", __FILE__, __LINE__);
             continue;
         }
             
 
         sin_size = sizeof(struct sockaddr_in);
-        // printf("********%s %d\n", __FILE__, __LINE__);
         connected = u_accept(sock, (struct sockaddr *)&client_addr, &sin_size);
-        // printf("********%s %d\n", __FILE__, __LINE__);
 
         LOG_I("new client connected from (%s, %d)",
                    inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
@@ -339,9 +335,7 @@ void iperf_server(void *thread_param)
         tick1 = rt_tick_get();
         while (param.mode != IPERF_MODE_STOP)
         {
-            // printf("*******%s %d, before u_recv: %d\n", __FILE__, __LINE__, rt_tick_get());
             bytes_received = u_recv(connected, recv_data, IPERF_BUFSZ, 0);
-            printf("%d bytes\n", bytes_received);
             if (bytes_received <= 0) break;
 
             recvlen += bytes_received;

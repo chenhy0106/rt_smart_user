@@ -16,8 +16,6 @@
 #endif
 
 #include "sal.h"
-// #include "af_inet.h"
-
 #include "netdev.h"
 
 int inet_ioctlsocket(int socket, long cmd, void *arg)
@@ -32,60 +30,6 @@ int inet_ioctlsocket(int socket, long cmd, void *arg)
         return unet_ioctl(socket, cmd, arg);
     }
 }
-
-// extern int unet_get_wakeup_event_cnt(int fd,rt_uint64_t *event_cnt);
-// #ifdef SAL_USING_POSIX
-// static int inet_poll(struct dfs_fd *file, struct rt_pollreq *req)
-// {
-//     int mask;
-//     int socket = (int)(unsigned long)file->fnode->data;
-//     int lwip_fd = 0;
-//     struct sal_socket *sal_sock;
-//     int shmid;
-//     struct unet_cmd *unet_cmd;
-//     rt_uint64_t old_wakeup_event_cnt;
-//     rt_uint64_t new_wakeup_event_cnt;
-
-//     sal_sock = sal_get_socket(socket);
-//     if(!sal_sock)
-//     {
-//         return -1;
-//     }
-//     lwip_fd = (int)(unsigned long)(size_t)sal_sock->user_data;
-
-//     /* arguments: maxfd, *readset, *writeset, *exceptset, *timeout */
-//     shmid = compose_cmd1(UNET_SRV_CMD_POLL, (void *)(unsigned long)lwip_fd, 0);
-//     if (shmid < 0)
-//     {
-//         rt_kprintf("%s get shmid %d error\n",__func__,shmid);
-//         return -1;
-//     }
-
-//     unet_cmd = (struct unet_cmd *)lwp_shminfo(shmid);
-//     unet_get_wakeup_event_cnt(lwip_fd,&old_wakeup_event_cnt);
-//     mask = (int)(unsigned long) unet_cmd_send_recv(unet_get_stack_channel(), (void *)(unsigned long)shmid);
-
-//     /*
-//      * During the unet_cmd_send_recv function call, the wake-up event may occur. 
-//      * If an update is detected, call unet_cmd_send_recv function again to get last event
-//      */
-//     unet_get_wakeup_event_cnt(lwip_fd,&new_wakeup_event_cnt);
-//     if(new_wakeup_event_cnt > old_wakeup_event_cnt)
-//     {
-//         unet_cmd->argv[0] = (void *)(unsigned long)(lwip_fd);
-//         mask = (int)(unsigned long) unet_cmd_send_recv(unet_get_stack_channel(), (void *)(unsigned long)shmid);
-//     }
-
-//     rt_wqueue_t *wq = sock_wqueue_find(unet_cmd->argv[0]);
-
-//     lwp_shmrm(shmid);
-    
-//     if (wq)
-//         rt_poll_add(wq, req);
-
-//     return mask;
-// }
-// #endif
 
 static const struct sal_socket_ops unet_socket_ops =
 {

@@ -7,7 +7,7 @@
 #include <stdio.h>
 
 static int ueth_ueth_srv_channel = -1;
-const char *ueth_srv_name = "ueth_srv";
+const char *ueth_srv_name = "ipc_srv";
 static int ueth_int_channel = -1;
 const char *ueth_int_name = "ueth_int";
 
@@ -94,36 +94,6 @@ void ueth_init_clock()
     }
 
     lwp_shmrm(shmid);
-}
-
-void ueth_dcache_clean(void *paddr, size_t size)
-{
-    int shmid = channel_compose_cmd3(UETH_DCACHE_REQ, (void*)0, (void*)UETH_DCACHE_CLEAN, paddr, sizeof(size_t));
-    struct channel_cmd *cmd = (struct channel_cmd*)lwp_shmat(shmid, NULL);
-    if (cmd)
-    {
-        memcpy(CHANNEL_CMD_DATA(cmd), (void*)&size, sizeof(size_t));
-        channel_cmd_send_recv(ueth_ueth_srv_channel, (void *)(size_t)shmid);
-        lwp_shmdt(cmd);
-    }
-
-    lwp_shmrm(shmid);
-    return;
-}
-
-void ueth_dcache_invalid(void *paddr, size_t size)
-{
-    int shmid = channel_compose_cmd3(UETH_DCACHE_REQ, (void*)0, (void*)UETH_DCACHE_INVALID, paddr, sizeof(size_t));
-    struct channel_cmd *cmd = (struct channel_cmd*)lwp_shmat(shmid, NULL);
-    if (cmd)
-    {
-        memcpy(CHANNEL_CMD_DATA(cmd), (void*)&size, sizeof(size_t));
-        channel_cmd_send_recv(ueth_ueth_srv_channel, (void *)(size_t)shmid);
-        lwp_shmdt(cmd);
-    }
-
-    lwp_shmrm(shmid);
-    return;
 }
 
 void ueth_hw_interrupt_install(int vector, void * param) {

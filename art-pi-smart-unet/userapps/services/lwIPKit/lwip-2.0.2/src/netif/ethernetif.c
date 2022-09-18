@@ -73,41 +73,6 @@
 #define RT_ETHERNETIF_THREAD_PREORITY   RT_LWIP_ETHTHREAD_PRIORITY
 #endif
 
-#ifndef LWIP_NO_TX_THREAD
-/**
- * Tx message structure for Ethernet interface
- */
-struct eth_tx_msg
-{
-    struct netif    *netif;
-    struct pbuf     *buf;
-};
-
-static struct rt_mailbox eth_tx_thread_mb;
-// static struct rt_thread eth_tx_thread;
-#ifndef RT_LWIP_ETHTHREAD_MBOX_SIZE
-static char eth_tx_thread_mb_pool[32 * sizeof(void *)];
-// static char eth_tx_thread_stack[512];
-#else
-static char eth_tx_thread_mb_pool[RT_LWIP_ETHTHREAD_MBOX_SIZE * sizeof(void *)];
-// static char eth_tx_thread_stack[RT_LWIP_ETHTHREAD_STACKSIZE];
-#endif
-#endif
-
-#ifndef LWIP_NO_RX_THREAD
-static struct rt_mailbox eth_rx_thread_mb;
-// static struct rt_thread eth_rx_thread;
-#ifndef RT_LWIP_ETHTHREAD_MBOX_SIZE
-static char eth_rx_thread_mb_pool[48 * sizeof(void *)];
-// static char eth_rx_thread_stack[1024];
-#else
-static char eth_rx_thread_mb_pool[RT_LWIP_ETHTHREAD_MBOX_SIZE * sizeof(void *)];
-// static char eth_rx_thread_stack[RT_LWIP_ETHTHREAD_STACKSIZE];
-#endif
-#endif
-
-// #ifdef RT_USING_NETDEV
-
 #include "lwip/ip.h"
 #include "lwip/init.h"
 #include "lwip/netdb.h"
@@ -254,21 +219,6 @@ __exit:
     return result;
 }
 #endif /* RT_LWIP_USING_PING */
-
-// #if defined (RT_LWIP_TCP) || defined (RT_LWIP_UDP)
-// void lwip_netdev_netstat(struct netdev *netif)
-// {
-//     extern void list_tcps(void);
-//     extern void list_udps(void);
-
-// #ifdef RT_LWIP_TCP
-//     list_tcps();
-// #endif
-// #ifdef RT_LWIP_UDP
-//     list_udps();
-// #endif
-// }
-// #endif /* RT_LWIP_TCP || RT_LWIP_UDP */
 #endif /* RT_USING_FINSH */
 
 static int lwip_netdev_set_default(struct netdev *netif)
@@ -326,11 +276,6 @@ static int netdev_add(struct netif *lwip_netif)
         return -ERR_IF;
     }
     
-// #ifdef SAL_USING_LWIP
-//     extern int sal_lwip_netdev_set_pf_info(struct netdev *netdev);
-//     /* set the lwIP network interface device protocol family information */
-//     sal_lwip_netdev_set_pf_info(netdev);
-// #endif /* SAL_USING_LWIP */
     extern int sal_unet_netdev_set_pf_info(struct netdev *netdev);
     sal_unet_netdev_set_pf_info(netdev);
 
@@ -390,32 +335,6 @@ static int netdev_flags_sync(struct netif *lwip_netif)
 
 static err_t ethernetif_linkoutput(struct netif *netif, struct pbuf *p)
 {
-// #ifndef LWIP_NO_TX_THREAD
-//     struct eth_tx_msg msg;
-//     struct eth_device* enetif;
-
-//     RT_ASSERT(netif != RT_NULL);
-//     enetif = (struct eth_device*)netif->state;
-
-//     /* send a message to eth tx thread */
-//     msg.netif = netif;
-//     msg.buf   = p;
-//     if (rt_mb_send(&eth_tx_thread_mb, (rt_ubase_t) &msg) == RT_EOK)
-//     {
-//         /* waiting for ack */
-//         rt_sem_take(&(enetif->tx_ack), RT_WAITING_FOREVER);
-//     }
-// #else
-//     struct eth_device* enetif;
-
-//     RT_ASSERT(netif != RT_NULL);
-//     enetif = (struct eth_device*)netif->state;
-
-//     if (enetif->eth_tx(&(enetif->parent), p) != RT_EOK)
-//     {
-//         return ERR_IF;
-//     }
-// #endif
     struct eth_device* enetif;
 
     RT_ASSERT(netif != RT_NULL);
@@ -762,17 +681,6 @@ rt_err_t af_unix_eth_device_init(struct eth_device * dev, const char *name)
 #endif /* SAL_USING_AF_UNIX */
 
 #ifndef LWIP_NO_RX_THREAD
-rt_err_t eth_device_ready(struct eth_device* dev)
-{
-    if (dev->netif)
-    {
-        /* post message to Ethernet thread */
-        return rt_mb_send(&eth_rx_thread_mb, (rt_ubase_t)dev);        
-    }
-    else
-        return ERR_OK; /* netif is not initialized yet, just return. */
-}
-
 rt_err_t eth_device_linkchange(struct eth_device* dev, rt_bool_t up)
 {
     // rt_uint32_t level;
@@ -814,44 +722,8 @@ rt_err_t eth_device_linkchange(struct eth_device* dev, rt_bool_t up)
 #endif
 
 extern int eth_init_done;
-#ifndef LWIP_NO_TX_THREAD
-/* Ethernet Tx Thread */
-// static void eth_tx_thread_entry(void* parameter)
-// {
-//     while (!eth_init_done)
-//     {
-//         rt_thread_mdelay(10);
-//     }
-    
-//     struct eth_tx_msg* msg;
-//     while (1)
-//     {
-//         if (rt_mb_recv(&eth_tx_thread_mb, (rt_ubase_t *)&msg, RT_WAITING_FOREVER) == RT_EOK)
-//         {
-//             struct eth_device* enetif;
-
-//             RT_ASSERT(msg->netif != RT_NULL);
-//             RT_ASSERT(msg->buf   != RT_NULL);
-
-//             enetif = (struct eth_device*)msg->netif->state;
-//             if (enetif != RT_NULL)
-//             {
-//                 /* call driver's interface */
-//                 if (enetif->eth_tx(&(enetif->parent), msg->buf) != RT_EOK)
-//                 {
-//                     /* transmit eth packet failed */
-//                 }
-//             }
-
-//             /* send ACK */
-//             rt_sem_release(&(enetif->tx_ack));
-//         }
-//     }
-// }
-#endif
 
 #ifndef LWIP_NO_RX_THREAD
-
 /* Ethernet Rx Thread */
 extern void* ueth_rx_interrupt_detect(void);
 static void eth_rx_thread_entry(void* parameter)
@@ -897,49 +769,16 @@ int eth_system_device_init(void)
 {
     return 0;
 }
+
 int eth_system_device_init_private(void)
 {
     rt_err_t result = RT_EOK;
 
     /* initialize Rx thread. */
 #ifndef LWIP_NO_RX_THREAD
-    /* initialize mailbox and create Ethernet Rx thread */
-    result = rt_mb_init(&eth_rx_thread_mb, "erxmb",
-                        &eth_rx_thread_mb_pool[0], sizeof(eth_rx_thread_mb_pool)/sizeof(void *),
-                        RT_IPC_FLAG_FIFO);
-    RT_ASSERT(result == RT_EOK);
-
     rt_thread_t erx_tid = rt_thread_create("erx", eth_rx_thread_entry, RT_NULL, RT_LWIP_ETHTHREAD_STACKSIZE, 25, 16);
-    // rt_thread_t erx_tid = rt_thread_create("erx", eth_rx_thread_entry, RT_NULL, RT_LWIP_ETHTHREAD_STACKSIZE, 30, 16);
     result = rt_thread_startup(erx_tid);
     RT_ASSERT(result == RT_EOK);
-
-    // result = rt_thread_init(&eth_rx_thread, "erx", eth_rx_thread_entry, RT_NULL,
-    //                         &eth_rx_thread_stack[0], sizeof(eth_rx_thread_stack),
-    //                         RT_ETHERNETIF_THREAD_PREORITY, 16);
-    // RT_ASSERT(result == RT_EOK);
-    // result = rt_thread_startup(&eth_rx_thread);
-    // RT_ASSERT(result == RT_EOK);
-#endif
-
-    /* initialize Tx thread */
-#ifndef LWIP_NO_TX_THREAD
-    /* initialize mailbox and create Ethernet Tx thread */
-    result = rt_mb_init(&eth_tx_thread_mb, "etxmb",
-                        &eth_tx_thread_mb_pool[0], sizeof(eth_tx_thread_mb_pool)/sizeof(void *),
-                        RT_IPC_FLAG_FIFO);
-    RT_ASSERT(result == RT_EOK);
-
-    // result = rt_thread_init(&eth_tx_thread, "etx", eth_tx_thread_entry, RT_NULL,
-    //                         &eth_tx_thread_stack[0], sizeof(eth_tx_thread_stack),
-    //                         RT_ETHERNETIF_THREAD_PREORITY, 16);
-    // RT_ASSERT(result == RT_EOK);
-    // result = rt_thread_startup(&eth_tx_thread);
-    // RT_ASSERT(result == RT_EOK);
-
-    // rt_thread_t etx_tid = rt_thread_create("etx", eth_tx_thread_entry, RT_NULL, RT_LWIP_ETHTHREAD_STACKSIZE, RT_ETHERNETIF_THREAD_PREORITY, 16);
-    // result = rt_thread_startup(etx_tid);
-    // RT_ASSERT(result == RT_EOK);
 #endif
     return (int)result;
 }
@@ -989,190 +828,3 @@ void set_if(char* netif_name, char* ip_addr, char* gw_addr, char* nm_addr)
         netif_set_netmask(netif, ip);
     }
 }
-
-// #ifdef RT_USING_FINSH
-// #include <finsh.h>
-// FINSH_FUNCTION_EXPORT(set_if, set network interface address);
-
-// #if LWIP_DNS
-// #include <lwip/dns.h>
-// void set_dns(uint8_t dns_num, char* dns_server)
-// {
-//     ip_addr_t addr;
-
-//     if ((dns_server != RT_NULL) && ipaddr_aton(dns_server, &addr))
-//     {
-//         dns_setserver(dns_num, &addr);
-//     }
-// }
-// FINSH_FUNCTION_EXPORT(set_dns, set DNS server address);
-// #endif
-
-// void list_if(void)
-// {
-//     rt_ubase_t index;
-//     struct netif * netif;
-
-//     rt_enter_critical();
-
-//     netif = netif_list;
-
-//     while( netif != RT_NULL )
-//     {
-//         rt_kprintf("network interface: %c%c%s\n",
-//                    netif->name[0],
-//                    netif->name[1],
-//                    (netif == netif_default)?" (Default)":"");
-//         rt_kprintf("MTU: %d\n", netif->mtu);
-//         rt_kprintf("MAC: ");
-//         for (index = 0; index < netif->hwaddr_len; index ++)
-//             rt_kprintf("%02x ", netif->hwaddr[index]);
-//         rt_kprintf("\nFLAGS:");
-//         if (netif->flags & NETIF_FLAG_UP) rt_kprintf(" UP");
-//         else rt_kprintf(" DOWN");
-//         if (netif->flags & NETIF_FLAG_LINK_UP) rt_kprintf(" LINK_UP");
-//         else rt_kprintf(" LINK_DOWN");
-//         if (netif->flags & NETIF_FLAG_ETHARP) rt_kprintf(" ETHARP");
-//         if (netif->flags & NETIF_FLAG_BROADCAST) rt_kprintf(" BROADCAST");
-//         if (netif->flags & NETIF_FLAG_IGMP) rt_kprintf(" IGMP");
-//         rt_kprintf("\n");
-//         rt_kprintf("ip address: %s\n", ipaddr_ntoa(&(netif->ip_addr)));
-//         rt_kprintf("gw address: %s\n", ipaddr_ntoa(&(netif->gw)));
-//         rt_kprintf("net mask  : %s\n", ipaddr_ntoa(&(netif->netmask)));
-// #if LWIP_IPV6
-// 		{
-// 			ip6_addr_t *addr;
-// 			int addr_state;
-// 			int i;
-			
-// 			addr = (ip6_addr_t *)&netif->ip6_addr[0];
-// 			addr_state = netif->ip6_addr_state[0];
-			
-// 			rt_kprintf("\nipv6 link-local: %s state:%02X %s\n", ip6addr_ntoa(addr), 
-// 			addr_state, ip6_addr_isvalid(addr_state)?"VALID":"INVALID");
-			
-// 			for(i=1; i<LWIP_IPV6_NUM_ADDRESSES; i++)
-// 			{
-// 				addr = (ip6_addr_t *)&netif->ip6_addr[i];
-// 				addr_state = netif->ip6_addr_state[i];
-			
-// 				rt_kprintf("ipv6[%d] address: %s state:%02X %s\n", i, ip6addr_ntoa(addr), 
-// 				addr_state, ip6_addr_isvalid(addr_state)?"VALID":"INVALID");
-// 			}
-			
-// 		}
-//         rt_kprintf("\r\n");
-// #endif /* LWIP_IPV6 */
-//         netif = netif->next;
-//     }
-
-// #if LWIP_DNS
-//     {
-//         const ip_addr_t *ip_addr;
-
-//         for(index=0; index<DNS_MAX_SERVERS; index++)
-//         {
-//             ip_addr = dns_getserver(index);
-//             rt_kprintf("dns server #%d: %s\n", index, ipaddr_ntoa(ip_addr));
-//         }
-//     }
-// #endif /**< #if LWIP_DNS */
-
-//     rt_exit_critical();
-// }
-// FINSH_FUNCTION_EXPORT(list_if, list network interface information);
-
-// #if LWIP_TCP
-// #include <lwip/tcp.h>
-// #include <lwip/priv/tcp_priv.h>
-
-// void list_tcps(void)
-// {
-//     rt_uint32_t num = 0;
-//     struct tcp_pcb *pcb;
-//     char local_ip_str[16];
-//     char remote_ip_str[16];
-
-//     extern struct tcp_pcb *tcp_active_pcbs;
-//     extern union tcp_listen_pcbs_t tcp_listen_pcbs;
-//     extern struct tcp_pcb *tcp_tw_pcbs;
-
-//     rt_enter_critical();
-//     rt_kprintf("Active PCB states:\n");
-//     for(pcb = tcp_active_pcbs; pcb != NULL; pcb = pcb->next)
-//     {
-//         strcpy(local_ip_str, ipaddr_ntoa(&(pcb->local_ip)));
-//         strcpy(remote_ip_str, ipaddr_ntoa(&(pcb->remote_ip)));
-
-//         rt_kprintf("#%d %s:%d <==> %s:%d snd_nxt 0x%08X rcv_nxt 0x%08X ",
-//                    num++,
-//                    local_ip_str,
-//                    pcb->local_port,
-//                    remote_ip_str,
-//                    pcb->remote_port,
-//                    pcb->snd_nxt,
-//                    pcb->rcv_nxt);
-//         rt_kprintf("state: %s\n", tcp_debug_state_str(pcb->state));
-//     }
-
-//     rt_kprintf("Listen PCB states:\n");
-//     num = 0;
-//     for(pcb = (struct tcp_pcb *)tcp_listen_pcbs.pcbs; pcb != NULL; pcb = pcb->next)
-//     {
-//         rt_kprintf("#%d local port %d ", num++, pcb->local_port);
-//         rt_kprintf("state: %s\n", tcp_debug_state_str(pcb->state));
-//     }
-
-//     rt_kprintf("TIME-WAIT PCB states:\n");
-//     num = 0;
-//     for(pcb = tcp_tw_pcbs; pcb != NULL; pcb = pcb->next)
-//     {
-//         strcpy(local_ip_str, ipaddr_ntoa(&(pcb->local_ip)));
-//         strcpy(remote_ip_str, ipaddr_ntoa(&(pcb->remote_ip)));
-
-//         rt_kprintf("#%d %s:%d <==> %s:%d snd_nxt 0x%08X rcv_nxt 0x%08X ",
-//                    num++,
-//                    local_ip_str,
-//                    pcb->local_port,
-//                    remote_ip_str,
-//                    pcb->remote_port,
-//                    pcb->snd_nxt,
-//                    pcb->rcv_nxt);
-//         rt_kprintf("state: %s\n", tcp_debug_state_str(pcb->state));
-//     }
-//     rt_exit_critical();
-// }
-// FINSH_FUNCTION_EXPORT(list_tcps, list all of tcp connections);
-// #endif /* LWIP_TCP */
-
-// #if LWIP_UDP
-// #include "lwip/udp.h"
-// void list_udps(void)
-// {
-//     struct udp_pcb *pcb;
-//     rt_uint32_t num = 0;
-//     char local_ip_str[16];
-//     char remote_ip_str[16];
-
-//     rt_enter_critical();
-//     rt_kprintf("Active UDP PCB states:\n");
-//     for (pcb = udp_pcbs; pcb != NULL; pcb = pcb->next)
-//     {
-//         strcpy(local_ip_str, ipaddr_ntoa(&(pcb->local_ip)));
-//         strcpy(remote_ip_str, ipaddr_ntoa(&(pcb->remote_ip)));
-
-//         rt_kprintf("#%d %d %s:%d <==> %s:%d \n",
-//                    num, (int)pcb->flags,
-//                    local_ip_str,
-//                    pcb->local_port,
-//                    remote_ip_str,
-//                    pcb->remote_port);
-
-//         num++;
-//     }
-//     rt_exit_critical();
-// }
-// FINSH_FUNCTION_EXPORT(list_udps, list all of udp connections);
-// #endif /* LWIP_UDP */
-
-// #endif

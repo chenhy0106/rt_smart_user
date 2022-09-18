@@ -18,10 +18,6 @@
 #include <netif/ethernetif.h>
 #endif
 
-// #ifdef SAL_USING_UNET
-// #include "unet_eth.h"
-// #endif
-
 #include "MCIMX6Y2.h"
 #include "fsl_phy.h"
 #include "../../cmd_channel/ipc_service.h"
@@ -226,7 +222,7 @@ struct rt_imx6ul_ethps
     uint32_t phy_id;
 };
 
-int imx6ul_eth_init(int eth_select, const char ** eth_name);
+int imx6ul_eth_init();
 
 int32_t get_instance_by_base(void *base);
 #ifdef __cplusplus

@@ -17,12 +17,8 @@
 
 #include <stdio.h>
 #include <lwp_shm.h>
-// #include "lwip/pbuf.h"
 
 #define BSP_USING_IMX6ULL_ART_PI
-
-// #if (defined(RT_USING_ENET1)) || (defined(RT_USING_ENET2))
-
 #ifdef BSP_USING_IMX6ULL_ART_PI
 
 static struct imx6ull_iomuxc mdio_gpio[2] = 
@@ -210,12 +206,9 @@ rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
         LOG_E("ERROR: rx buff page alloc failed");
         return RT_ERROR;
     }
-    // buffConfig->rxBufferAlign = (void *)rt_ioremap_nocache(virtual_to_physical(rx_buff_addr), (SYS_PAGE_SIZE<<RX_BUFFER_INDEX_NUM));
-    // buffConfig->rxBufferAlign = ueth_remap(ueth_v2p(rx_buff_addr), UETH_REMAP_NOCACHE, rx_buff_memsize);
     buffConfig->rxBufferAlign = rx_buff_addr;
     buffConfig->rxPhyBufferAlign = ueth_v2p(rx_buff_addr);
     
-    // tx_buff_addr = (void*)rt_pages_alloc(TX_BUFFER_INDEX_NUM);
     tx_buff_addr = mem_align;
     mem_align += tx_buff_memsize;
     if(!tx_buff_addr)
@@ -223,12 +216,9 @@ rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
         LOG_E("ERROR: tx buff page alloc failed");
         return RT_ERROR;
     }
-    // buffConfig->txBufferAlign = (void *)rt_ioremap_nocache(virtual_to_physical(tx_buff_addr), (SYS_PAGE_SIZE<<TX_BUFFER_INDEX_NUM));
-    // buffConfig->txBufferAlign = ueth_remap(ueth_v2p(tx_buff_addr), UETH_REMAP_NOCACHE, tx_buff_memsize);
     buffConfig->txBufferAlign = tx_buff_addr;
     buffConfig->txPhyBufferAlign = ueth_v2p(tx_buff_addr);
     
-    // rx_bd_addr = (void*)rt_pages_alloc(RX_BD_INDEX_NUM);
     rx_bd_addr = mem_align;
     mem_align += rx_bd_memsize;
     if(!rx_bd_addr)
@@ -238,20 +228,15 @@ rt_err_t enet_buffer_init(enet_buffer_config_t *buffConfig)
     }
     buffConfig->rxPhyBdStartAddrAlign = ueth_v2p(rx_bd_addr);
     buffConfig->rxBdStartAddrAlign = ueth_remap(buffConfig->rxPhyBdStartAddrAlign, UETH_REMAP_NOCACHE, rx_bd_memsize);
-    // buffConfig->rxBdStartAddrAlign = (void *)rt_ioremap_nocache(virtual_to_physical(rx_bd_addr), (SYS_PAGE_SIZE<<RX_BD_INDEX_NUM));
-    // buffConfig->rxBdStartAddrAlign = rx_bd_addr;
-   
-    // tx_bd_addr = (void*)rt_pages_alloc(TX_BD_INDEX_NUM);
+    
     tx_bd_addr = mem_align;
     if(!tx_bd_addr)
     {
         LOG_E("ERROR: tx bd page alloc failed");
         return RT_ERROR;
     }
-    // buffConfig->txBdStartAddrAlign = (void *)rt_ioremap_nocache(virtual_to_physical(tx_bd_addr), (SYS_PAGE_SIZE<<TX_BD_INDEX_NUM));
     buffConfig->txPhyBdStartAddrAlign = ueth_v2p(tx_bd_addr);
     buffConfig->txBdStartAddrAlign = ueth_remap(buffConfig->txPhyBdStartAddrAlign, UETH_REMAP_NOCACHE, tx_bd_memsize);
-    // buffConfig->txBdStartAddrAlign = tx_bd_addr;
     
     return RT_EOK;
 }
@@ -336,7 +321,6 @@ static rt_err_t rt_imx6ul_eth_control(rt_device_t dev, int cmd, void *args)
             rt_uint32_t uid[2];
             rt_uint32_t uid_crc = 0;
 
-            // ioremap
             ocotp_base = (OCOTP_Type *)ueth_remap((void*)OCOTP_BASE, UETH_REMAP, 0x1000);
 
             uid[0] = ocotp_base->CFG0;
@@ -567,24 +551,6 @@ int32_t get_instance_by_base(void *base)
     
 }
 
-void rx_enet_callback(void *base)
-{
-    int32_t instance = 0;
-    instance = get_instance_by_base(base);
-    if(instance == -1)
-    {
-        LOG_E("interrput match base addr error");
-        return;
-    }
-    ENET_DisableInterrupts(base,ENET_RX_INTERRUPT);
-    eth_device_ready(&(_imx6ul_eth_device[instance].parent));
-}
-
-void tx_enet_callback(void *base)
-{
-    ENET_DisableInterrupts(base,ENET_TX_INTERRUPT);
-}
-
 static void* ueth_rx_interrupt_handle(ENET_Type *base)
 {
     /* Clear the transmit interrupt event. */
@@ -606,7 +572,6 @@ void* ueth_rx_interrupt_detect(void) {
 #ifdef POLL_INT
     while (1)
     {
-        // rt_thread_mdelay(1);
         if ((base->EIR & ENET_RX_INTERRUPT) && (base->EIMR & ENET_RX_INTERRUPT))
         {
             ENET_DisableInterrupts(base, ENET_RX_INTERRUPT);
@@ -671,7 +636,7 @@ const static struct rt_device_ops _k_enet_ops =
     rt_imx6ul_eth_control,
 };
 
-int imx6ul_eth_init(int eth_select, const char ** eth_name)
+int imx6ul_eth_init()
 {
     rt_err_t state = RT_EOK;
     char link_detect[10];
@@ -729,16 +694,5 @@ int imx6ul_eth_init(int eth_select, const char ** eth_name)
         memset(link_detect,0,sizeof(link_detect));
     }
 
-    if (eth_select > GET_ARRAY_NUM(_imx6ul_eth_device)) 
-    {
-        *eth_name = RT_NULL;
-        state = -RT_ERROR;
-    } 
-    else 
-    {
-        *eth_name = _imx6ul_eth_device[eth_select].mac_name;
-    }
-
     return state;
 }
-// #endif

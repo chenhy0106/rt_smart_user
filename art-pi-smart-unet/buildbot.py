@@ -162,11 +162,11 @@ if using_klibc:
     os.chdir(os.path.join(sdk_path, 'libc'))
     if using_ulibc:
         os.system('scons -c --build-ulibc')
-        os.system('scons -j6 --build-ulibc')
+        os.system('scons -j10 --build-ulibc')
         os.system('scons install --build-ulibc')
     else:
         os.system('scons -c')
-        os.system('scons -j6')
+        os.system('scons -j10')
         os.system('scons install')
     print('buildbot: Build libc done .')
 
@@ -197,7 +197,7 @@ if os.path.exists(os.path.join(usr_path, 'sdk', 'rt-thread')):
 
 os.chdir(os.path.join(sdk_path, 'rt-thread'))
 os.system('scons -c')
-os.system('scons -j6')
+os.system('scons -j10')
 os.system('scons install')
 print('buildbot: Build librtthread done .')
 
@@ -205,7 +205,7 @@ print('buildbot: Build librtthread done .')
 # print('buildbot: Build libdbkit ...')
 # os.chdir(os.path.join(sdk_path, 'libdbkit'))
 # os.system('scons -c')
-# os.system('scons -j6')
+# os.system('scons -j10')
 # os.system('scons install')
 # print('buildbot: Build libdbkit done .')
 
@@ -214,7 +214,7 @@ if no_userapps == False:
     print('buildbot: Build userapps ...')
     os.chdir(usr_path)
     os.system('scons -c')
-    os.system('scons -j6')
+    os.system('scons -j10')
     print('buildbot: Build userapps done .')
 
 def copy_libgcc(libgcc_path, libc_path):
@@ -260,5 +260,5 @@ for bsp in bsp_list:
     # build kernel
     os.chdir(bsp_path)
     os.system('scons -c')
-    os.system('scons -j6')
+    os.system('scons -j10')
     print('buildbot: Build bsp %s done .' % bsp)

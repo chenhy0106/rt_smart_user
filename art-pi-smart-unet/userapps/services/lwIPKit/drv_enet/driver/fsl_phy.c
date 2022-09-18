@@ -137,7 +137,6 @@ status_t PHY_StartNegotiation(ENET_Type *base, uint32_t phyAddr)
                             break;
                         }
                     }
-                    // rt_thread_delay(PHY_NEGOTIATION_DELAY);
                     rt_thread_mdelay(PHY_NEGOTIATION_DELAY);
                     if (!counter)
                     {

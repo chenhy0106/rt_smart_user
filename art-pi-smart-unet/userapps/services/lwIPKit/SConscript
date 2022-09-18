@@ -1,8 +1,8 @@
 from building import *
 
 cwd = GetCurrentDir()
-src = Glob('src/*.c') + Glob('src/*.cpp') + Glob('cmd_channel/*.c') + Glob('cmd_channel/*.cpp') + Glob('netdev/*.c') + Glob('netdev/*.cpp') + Glob('usocket/*.c') + Glob('dfs/*.c')
-CPPPATH = [cwd, cwd + '/src', cwd + '/cmd_channel', cwd + '/netdev', cwd + '/usocket', cwd + '/dfs']
+src = Glob('main.c') + Glob('src/*.cpp') + Glob('cmd_channel/*.c') + Glob('cmd_channel/*.cpp') + Glob('netdev/*.c') + Glob('netdev/*.cpp') + Glob('usocket/*.c') + Glob('dfs/*.c')
+CPPPATH = [cwd, cwd + '/cmd_channel', cwd + '/netdev', cwd + '/usocket', cwd + '/dfs']
 
 CPPDEFINES = [
         'RT_USING_NEWLIB',

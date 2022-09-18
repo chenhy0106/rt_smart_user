@@ -23,8 +23,6 @@
 #include "sal.h"
 #include "netdev.h"
 
-// #include "workqueue.h"
-
 #define DBG_TAG                        "sal.skt"
 #define DBG_LVL                        DBG_INFO
 #include <rtdbg.h>
@@ -142,7 +140,6 @@ void check_netdev_internet_up_work(void *work_data)
     struct netdev *netdev = (struct netdev *)work_data;
     socklen_t addr_len = sizeof(struct sockaddr_in);
     char send_data[SAL_INTERNET_BUFF_LEN], recv_data = 0;
-    // struct rt_delayed_work *delay_work = (struct rt_delayed_work *)work;
 
     const char month[][SAL_INTERNET_MONTH_LEN] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
     char date[SAL_INTERNET_DATE_LEN];
@@ -150,11 +147,6 @@ void check_netdev_internet_up_work(void *work_data)
 
     struct sal_proto_family *pf = (struct sal_proto_family *) netdev->sal_user_data;
     const struct sal_socket_ops *skt_ops;
-
-    // if (work)
-    // {
-    //     rt_free(delay_work);
-    // }
 
     /* get network interface socket operations */
     if (pf == RT_NULL || pf->skt_ops == RT_NULL)
@@ -252,30 +244,6 @@ __exit:
     }
 }
 
-// /**
-//  * This function will check SAL network interface device internet status.
-//  *
-//  * @param netdev the network interface device to check
-//  */
-// int sal_check_netdev_internet_up(struct netdev *netdev)
-// {
-//     /* workqueue for network connect */
-//     struct rt_delayed_work *net_work = RT_NULL;
-
-//     RT_ASSERT(netdev);
-
-//     net_work = (struct rt_delayed_work *)rt_calloc(1, sizeof(struct rt_delayed_work));
-//     if (net_work == RT_NULL)
-//     {
-//         LOG_W("No memory for network interface device(%s) delay work.", netdev->name);
-//         return -1;
-//     }
-
-//     rt_delayed_work_init(net_work, check_netdev_internet_up_work, (void *)netdev);
-//     rt_work_submit(&(net_work->work), RT_TICK_PER_SECOND);
-
-//     return 0;
-// }
 
 /**
  * This function will register TLS protocol to the global TLS protocol.

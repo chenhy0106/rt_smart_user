@@ -13,10 +13,8 @@
 #include <unistd.h>
 
 #include <sys/time.h>
-// #include <sys/socket.h>
 #include <usocket.h>
 #include <sys/select.h>
-// #include <netdb.h>
 
 #define DBG_SECTION_NAME               "iperf"
 #define DBG_LEVEL                      DBG_INFO
@@ -306,23 +304,12 @@ void iperf_server(void *thread_param)
         goto __exit;
     }
 
-
-    // timeout.tv_sec = 3;
-    // timeout.tv_usec = 0;
     while (param.mode != IPERF_MODE_STOP)
     {
-        // FD_ZERO(&readset);
-        // FD_SET(sock, &readset);
-        // printf("******%s %d\n", __FILE__, __LINE__);
-        // if (select(sock + 1, &readset, RT_NULL, RT_NULL, &timeout) == 0)
-        //     continue;
-        // printf("******%s %d\n", __FILE__, __LINE__);
         sin_size = sizeof(struct sockaddr_in);
 
         connected = u_accept(sock, (struct sockaddr *)&client_addr, &sin_size);
 
-        // LOG_I("new client connected from (%s, %d)",
-        //            inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
         LOG_I("new client connected %d %d\n", client_addr.sin_addr.s_addr, client_addr.sin_port);
 
         {
@@ -339,9 +326,7 @@ void iperf_server(void *thread_param)
         tick1 = rt_tick_get();
         while (param.mode != IPERF_MODE_STOP)
         {
-            // printf("******%s %d\n", __FILE__, __LINE__);
             bytes_received = u_recv(connected, recv_data, IPERF_BUFSZ, 0);
-            // printf("******%s %d\n", __FILE__, __LINE__);
             if (bytes_received <= 0) break;
 
             recvlen += bytes_received;
@@ -362,8 +347,7 @@ void iperf_server(void *thread_param)
                 recvlen = 0;
             }
         }
-        // LOG_W("client disconnected (%s, %d)",
-        //            inet_ntoa(client_addr.sin_addr), ntohs(client_addr.sin_port));
+
         LOG_W("client disconnected");
         if (connected >= 0) closesocket(connected);
         connected = -1;
@@ -509,11 +493,6 @@ int main(int argc, char **argv)
                 }
             }
 
-            // tid = rt_thread_create(tid_name, function, RT_NULL, 4096, 25, 80);
-            // if (tid) 
-            // {
-            //     rt_thread_startup(tid);
-            // }
             (*function)(RT_NULL);
         }
     }

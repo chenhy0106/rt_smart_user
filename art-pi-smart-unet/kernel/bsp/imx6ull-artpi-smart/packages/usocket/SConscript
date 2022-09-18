@@ -1,9 +1,0 @@
-from building import *
-
-cwd     = GetCurrentDir()
-path    = [cwd]
-src     = ['usocket.c']
-
-group = DefineGroup('USOCKET', src, depend = [], CPPPATH = path)
-
-Return('group')

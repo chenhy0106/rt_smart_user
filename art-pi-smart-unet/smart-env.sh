@@ -60,5 +60,3 @@ echo "Arch      => ${def_arch}"
 echo "CC        => ${RTT_CC}"
 echo "PREFIX    => ${RTT_CC_PREFIX}"
 echo "EXEC_PATH => ${RTT_EXEC_PATH}"
-
-alias arm-linux-musleabi-gcc="color_compile arm-linux-musleabi-gcc"

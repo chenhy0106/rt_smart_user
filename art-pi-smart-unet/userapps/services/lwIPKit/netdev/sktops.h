@@ -36,13 +36,4 @@ int unet_gethostbyname_r(const char *name, struct hostent *ret, char *buf, size_
 int unet_getaddrinfo(const char *nodename, const char *servname, const struct addrinfo *hints, struct addrinfo **res);
 void unet_freeaddrinfo(struct addrinfo *ai);
 
-/*
- * Interfaces to the wait queue associated with a socket in kernel. Each
- * operation that might block must hang in the queue in kernel.
- */
-// int sock_wqueue_delete(void *sock);
-// int sock_wqueue_add(void *sock);
-// int sock_wqueue_suspend(void *sock, int ms);
-// rt_wqueue_t *sock_wqueue_find(void *sock);
-
 #endif  /* __UNET_H__ */

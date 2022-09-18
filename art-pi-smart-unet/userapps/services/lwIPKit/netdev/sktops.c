@@ -32,7 +32,6 @@ int unet_socket(int domain, int type, int protocol)
     type &= ~INTF_SOCK_NONBLOCK;
 
     socket = lwip_socket(domain, type, protocol);
-    // sock_wqueue_add((void*)get_socket(socket));
 
     /* handle the socket options */
     if (socket >= 0 && flag != 0)
@@ -44,7 +43,6 @@ int unet_socket(int domain, int type, int protocol)
 int unet_close(int socket)
 {
     int result = lwip_close(socket);
-    // sock_wqueue_delete((void*)get_socket(socket));
 
     return result;
 }
@@ -67,7 +65,6 @@ int unet_connect(int socket, const struct sockaddr *name, socklen_t namelen)
 int unet_accept(int socket, struct sockaddr *addr, socklen_t *addrlen)
 {
     socket = lwip_accept(socket, addr, addrlen);
-    // sock_wqueue_add((void*)get_socket(socket));
 
     return socket;
 }

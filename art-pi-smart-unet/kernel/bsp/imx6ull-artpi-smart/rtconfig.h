@@ -23,8 +23,6 @@
 #define RT_DEBUG
 #define RT_DEBUG_COLOR
 
-// #define RT_DEBUG_SCHEDULER 1
-
 /* Inter-Thread communication */
 
 #define RT_USING_SEMAPHORE
