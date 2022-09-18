@@ -270,13 +270,19 @@ set_process_id:
 .global switch_mmu
 switch_mmu:
     orr r0, #0x18
-    mcr p15, 0, r0, c2, c0, 0    /* ttbr0 */
+    mcr p15, 0, r0, c2, c0, 0    /* ttbr0   write r0 to ttbr0*/
 
     /* invalid tlb */
-    mov r0, #0
-    mcr p15, 0, r0, c8, c7, 0
-    mcr p15, 0, r0, c7, c5, 0    /* iciallu */
-    mcr p15, 0, r0, c7, c5, 6    /* bpiall */
+    ; mov r0, #0
+    ; mcr p15, 0, r0, c8, c7, 0    /* invalide all tlb entries */
+
+    and r2, r1, #0xff
+    mov r1, r1, LSL #0x8
+    orr r1, r1, r2                /* r1 = (pid << 8) | (pid & 0xFFUL) */
+    mcr p15, 0, r1, c13, c0, 1    /* set contextid = r1*/ 
+
+    mcr p15, 0, r0, c7, c5, 0    /* iciallu Invalidate entire instruction cache*/
+    mcr p15, 0, r0, c7, c5, 6    /* bpiall  Flush entire branch target cache*/
 
     dsb
     isb

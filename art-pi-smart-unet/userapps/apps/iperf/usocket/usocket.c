@@ -456,7 +456,6 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
     {
         lwp_shmdt(recv_cmd);
         lwp_shmrm(recv_shmid);
-        printf("****** ddddd\n");
         recv_shmid = compose_cmd4(UNET_SRV_CMD_RECVFROM, (void*)socket, (void*)len, (void*)flags, RT_NULL, len, &recv_cmd);
         static_len = len;
     }
@@ -476,16 +475,8 @@ ssize_t u_recv (int socket, void *mem, size_t len, int flags)
             void *ptr = (void*)cmd + UNET_CMD_OFFSET;
             memcpy(mem, ptr, len);
         }
-        // if (len > static_len)
-        // {
-        //     lwp_shmdt(cmd);
-        // }
     }
 
-    // if (len > static_len)
-    // {
-    //     lwp_shmrm(shmid);
-    // }
     return res;
 }
 

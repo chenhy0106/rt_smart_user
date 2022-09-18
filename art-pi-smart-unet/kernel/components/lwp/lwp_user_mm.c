@@ -28,7 +28,7 @@ int lwp_user_space_init(struct rt_lwp *lwp)
     return arch_user_space_init(lwp);
 }
 
-void switch_mmu(void *mtable);
+void switch_mmu(void *mtable, uint32_t pid);
 void *mmu_table_get(void);
 void lwp_mmu_switch(struct rt_thread *thread)
 {
@@ -48,7 +48,14 @@ void lwp_mmu_switch(struct rt_thread *thread)
     pre_mmu_table = mmu_table_get();
     if (pre_mmu_table != new_mmu_table)
     {
-        switch_mmu(new_mmu_table);
+        if (l)
+        {
+            switch_mmu(new_mmu_table, (uint32_t)l->pid);
+        }
+        else 
+        {
+            switch_mmu(new_mmu_table, 0);
+        }
     }
 }
 

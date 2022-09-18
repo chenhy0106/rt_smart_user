@@ -52,6 +52,8 @@
         "page.h": "c",
         "ethernet.h": "c",
         "cc.h": "c",
-        "sys.h": "c"
+        "sys.h": "c",
+        "unistd.h": "c",
+        "pmu.h": "c"
     }
 }
